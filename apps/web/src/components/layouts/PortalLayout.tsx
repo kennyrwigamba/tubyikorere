@@ -73,29 +73,29 @@ export function PortalLayout({ title, roleLabel, items }: PortalLayoutProps) {
 }
 
 export const execItems: PortalItem[] = [
-  { to: "/exec", label: "Home", icon: Home },
-  { to: "/exec/issues", label: "Issues", icon: ListTodo },
-  { to: "/exec/umuganda", label: "Umuganda", icon: ClipboardCheck },
-  { to: "/exec/reports", label: "Reports", icon: FileText },
-  { to: "/exec/menu", label: "Menu", icon: Menu },
+  { to: "/cell-executive/dashboard", label: "Home", icon: Home },
+  { to: "/cell-executive/issues", label: "Issues", icon: ListTodo },
+  { to: "/cell-executive/umuganda", label: "Umuganda", icon: ClipboardCheck },
+  { to: "/cell-executive/reports", label: "Reports", icon: FileText },
+  { to: "/cell-executive/menu", label: "Menu", icon: Menu },
 ];
 
 export const coordinatorItems: PortalItem[] = [
-  { to: "/coordinator", label: "Home", icon: Home },
+  { to: "/coordinator/home", label: "Home", icon: Home },
   { to: "/coordinator/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/coordinator/village", label: "My Village", icon: User },
   { to: "/coordinator/menu", label: "Menu", icon: Menu },
 ];
 
 export const sectorItems: PortalItem[] = [
-  { to: "/sector", label: "Overview", icon: Home },
-  { to: "/sector/reports", label: "Reports", icon: FileText },
-  { to: "/sector/map", label: "Map", icon: Map },
-  { to: "/sector/menu", label: "Menu", icon: Menu },
+  { to: "/sector-official/overview", label: "Overview", icon: Home },
+  { to: "/sector-official/reports", label: "Reports", icon: FileText },
+  { to: "/sector-official/map", label: "Map", icon: Map },
+  { to: "/sector-official/menu", label: "Menu", icon: Menu },
 ];
 
 export const adminItems: PortalItem[] = [
-  { to: "/admin", label: "Dashboard", icon: ShieldCheck },
+  { to: "/admin/dashboard", label: "Dashboard", icon: ShieldCheck },
   { to: "/admin/cells", label: "Cells", icon: Home },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/settings", label: "Settings", icon: Settings },
