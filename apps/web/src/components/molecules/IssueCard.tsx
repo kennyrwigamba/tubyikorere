@@ -1,54 +1,104 @@
-import { ChevronRight, TriangleAlert } from "lucide-react";
+import { ChevronRightIcon, TriangleAlertIcon } from "lucide-react";
+
 import { CategoryChip } from "@/components/atoms/CategoryChip";
 import { ChannelIcon } from "@/components/atoms/ChannelIcon";
 import { SeverityBadge } from "@/components/atoms/SeverityBadge";
 import { StatusBadge } from "@/components/atoms/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatTimeAgo, getSeverityConfig } from "@/lib/utils";
+import { getSeverityStripClass } from "@/lib/config/severity";
+import type { IssuePreview } from "@/lib/types/issue";
+import { cn, formatTimeAgo } from "@/lib/utils";
 
 type IssueCardProps = {
-  severity: number;
-  category: string;
-  status: string;
-  summary: string;
-  villageName: string;
-  channel: "web" | "whatsapp";
-  createdAt: string | Date;
-  requiresEscalation?: boolean;
+  issue: IssuePreview;
+  onClick?: () => void;
+  className?: string;
 };
 
-export function IssueCard(props: IssueCardProps) {
-  const cfg = getSeverityConfig(props.severity);
+export function IssueCard({ issue, onClick, className }: IssueCardProps) {
+  const interactive = Boolean(onClick);
 
   return (
-    <Card className="transition-all duration-150 hover:translate-y-[-2px] hover:shadow-[var(--shadow-sm)] active:scale-[0.99]">
-      <CardContent className="p-0">
-        <div className="flex">
-          <div className={cn("w-1.5 shrink-0 rounded-l-[var(--radius-lg)]", cfg.dotClass)} />
-          <div className="flex-1 p-4">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <SeverityBadge severity={props.severity} size="sm" />
-              <CategoryChip category={props.category} />
-              <StatusBadge status={props.status} />
-            </div>
-            <p className="line-clamp-2 text-base font-semibold">{props.summary}</p>
-            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{props.villageName}</span>
-              <ChannelIcon channel={props.channel} />
-              <span>{formatTimeAgo(props.createdAt)}</span>
-            </div>
-          </div>
-          <div className="flex items-center pr-3 text-muted-foreground">
-            <ChevronRight className="size-4" />
-          </div>
+    <Card
+      className={cn(
+        "flex flex-row gap-0 overflow-hidden py-0 shadow-none",
+        interactive &&
+          "cursor-pointer transition-colors hover:bg-muted/40 active:scale-[0.99]",
+        className,
+      )}
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+    >
+      <div
+        className={cn("w-1 shrink-0", getSeverityStripClass(issue.severity))}
+        aria-hidden
+      />
+
+      <CardContent className="min-w-0 flex-1 py-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <SeverityBadge severity={issue.severity} size="sm" showLabel={false} />
+          <CategoryChip category={issue.category} />
+          <StatusBadge status={issue.status} size="sm" />
         </div>
-        {props.requiresEscalation ? (
-          <div className="flex items-center gap-1 border-t border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-            <TriangleAlert className="size-3" />
-            <span>Flagged for sector escalation</span>
+
+        <p className="line-clamp-2 text-base font-semibold leading-snug">
+          {issue.summary}
+        </p>
+
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="truncate">{issue.villageName}</span>
+          <span aria-hidden>·</span>
+          <ChannelIcon channel={issue.submissionChannel} />
+          <span aria-hidden>·</span>
+          <time dateTime={new Date(issue.createdAt).toISOString()}>
+            {formatTimeAgo(issue.createdAt)}
+          </time>
+        </div>
+
+        {issue.requiresEscalation ? (
+          <div className="mt-3 flex items-center gap-1.5 border-t pt-3 text-xs text-[var(--color-brand-amber)]">
+            <TriangleAlertIcon className="size-3.5 shrink-0" aria-hidden />
+            Flagged for sector escalation
           </div>
         ) : null}
       </CardContent>
+
+      {interactive ? (
+        <div className="flex shrink-0 items-center pr-3 text-muted-foreground">
+          <ChevronRightIcon className="size-4" aria-hidden />
+        </div>
+      ) : null}
     </Card>
+  );
+}
+
+type IssueCardListProps = {
+  issues: IssuePreview[];
+  onIssueClick?: (issue: IssuePreview) => void;
+  className?: string;
+};
+
+export function IssueCardList({ issues, onIssueClick, className }: IssueCardListProps) {
+  return (
+    <div className={cn("flex flex-col gap-3", className)}>
+      {issues.map((issue) => (
+        <IssueCard
+          key={issue.id}
+          issue={issue}
+          onClick={onIssueClick ? () => onIssueClick(issue) : undefined}
+        />
+      ))}
+    </div>
   );
 }

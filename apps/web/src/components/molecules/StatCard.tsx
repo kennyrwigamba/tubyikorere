@@ -1,32 +1,93 @@
-import type { LucideIcon } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
+import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
-type StatCardProps = {
-  icon: LucideIcon;
-  value: string;
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn, formatPercent } from "@/lib/utils";
+
+export type StatCardProps = {
   label: string;
-  trend?: string;
-  emphasis?: "positive" | "warning";
+  value: string | number;
+  /** Percent change shown in the top-right badge. Omit to hide. */
+  trend?: number;
+  /** Primary footer line — e.g. "2 new since last week" */
+  trendLabel?: string;
+  /** Secondary footer line — muted helper text */
+  footer?: ReactNode;
+  className?: string;
 };
 
-export function StatCard({ icon: Icon, value, label, trend, emphasis }: StatCardProps) {
+function TrendIcon({ trend, className }: { trend: number; className?: string }) {
+  const Icon = trend < 0 ? TrendingDownIcon : TrendingUpIcon;
+  return <Icon aria-hidden className={className} />;
+}
+
+/** Single metric card — extracted from shadcn dashboard-01 SectionCards. */
+export function StatCard({
+  label,
+  value,
+  trend,
+  trendLabel,
+  footer,
+  className,
+}: StatCardProps) {
+  const showFooter = Boolean(trendLabel || footer);
+
   return (
-    <Card
+    <Card className={cn("@container/card", className)}>
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          {value}
+        </CardTitle>
+        {trend !== undefined ? (
+          <CardAction>
+            <Badge variant="outline" className="tabular-nums">
+              <TrendIcon trend={trend} />
+              {formatPercent(trend)}
+            </Badge>
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      {showFooter ? (
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          {trendLabel ? (
+            <div className="line-clamp-1 flex gap-2 font-medium">
+              {trendLabel}
+              {trend !== undefined ? <TrendIcon trend={trend} className="size-4" /> : null}
+            </div>
+          ) : null}
+          {footer ? (
+            <div className="text-muted-foreground">{footer}</div>
+          ) : null}
+        </CardFooter>
+      ) : null}
+    </Card>
+  );
+}
+
+type StatCardGridProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+/** Responsive stat grid — uses container queries so layout respects sidebar width. */
+export function StatCardGrid({ children, className }: StatCardGridProps) {
+  return (
+    <div
       className={cn(
-        "relative overflow-hidden",
-        emphasis === "positive" && "border-l-4 border-l-[var(--color-brand-green)]",
-        emphasis === "warning" && "border-l-4 border-l-[var(--color-brand-amber)]"
+        "grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card",
+        className,
       )}
     >
-      <CardContent className="space-y-3 p-5">
-        <div className="flex items-center justify-between">
-          <Icon className="size-6 text-muted-foreground" />
-          {trend ? <span className="text-xs font-medium text-muted-foreground">{trend}</span> : null}
-        </div>
-        <p className="text-4xl leading-none font-extrabold text-foreground">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
+      {children}
+    </div>
   );
 }

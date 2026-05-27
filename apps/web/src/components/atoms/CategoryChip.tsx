@@ -1,23 +1,24 @@
-import { Badge } from "@/components/ui/badge";
+import { getCategoryConfig } from "@/lib/config/categories";
+import type { IssueCategory } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 type CategoryChipProps = {
-  category: string;
+  category: IssueCategory;
+  className?: string;
 };
 
-const LABELS: Record<string, string> = {
-  infrastructure: "Infrastructure",
-  water: "Water",
-  health: "Health",
-  education: "Education",
-  environment: "Environment",
-  safety: "Safety",
-  other: "Other",
-};
+export function CategoryChip({ category, className }: CategoryChipProps) {
+  const config = getCategoryConfig(category);
 
-export function CategoryChip({ category }: CategoryChipProps) {
   return (
-    <Badge variant="outline" className="capitalize">
-      {LABELS[category] ?? category}
-    </Badge>
+    <span
+      className={cn(
+        "inline-flex w-fit shrink-0 items-center rounded-[var(--radius-sm)] border px-2 py-0.5 text-xs font-medium",
+        config.className,
+        className,
+      )}
+    >
+      {config.label}
+    </span>
   );
 }

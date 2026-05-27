@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { useMemo } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function RootLayout() {
   const queryClient = useMemo(() => new QueryClient(), []);
@@ -11,8 +12,10 @@ export function RootLayout() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
-        <Outlet />
-        <Toaster />
+        <TooltipProvider>
+          <Outlet />
+          <Toaster />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

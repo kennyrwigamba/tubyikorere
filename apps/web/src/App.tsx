@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { RootLayout } from "@/components/layouts/RootLayout";
-import { PublicLayout } from "@/components/layouts/PublicLayout";
 import { ExecLayout } from "@/components/layouts/ExecLayout";
 import { CoordinatorLayout } from "@/components/layouts/CoordinatorLayout";
 import { SectorLayout } from "@/components/layouts/SectorLayout";
@@ -16,9 +15,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<RootLayout />}>
-        <Route element={<PublicLayout />}>
-          <Route path="/design" element={<DesignRoute />} />
-        </Route>
+        <Route path="/design" element={<DesignRoute />} />
 
         <Route element={<ProtectedLayout allowedRoles={["cell_executive"]} />}>
           <Route path="/exec" element={<ExecLayout />}>

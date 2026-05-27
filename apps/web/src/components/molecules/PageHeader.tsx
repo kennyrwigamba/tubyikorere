@@ -1,19 +1,37 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 type PageHeaderProps = {
   title: string;
-  subtitle?: string;
-  action?: ReactNode;
+  description?: string;
+  actions?: ReactNode;
+  className?: string;
 };
 
-export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
+/** Page-level heading below the navbar — title, context line, optional actions. */
+export function PageHeader({
+  title,
+  description,
+  actions,
+  className,
+}: PageHeaderProps) {
   return (
-    <header className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 className="text-3xl">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+    <header
+      className={cn(
+        "flex flex-col gap-3 border-b border-border/60 bg-card px-4 py-4 lg:px-6 lg:py-5 sm:flex-row sm:items-end sm:justify-between",
+        className,
+      )}
+    >
+      <div className="min-w-0 space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
-      {action ? <div>{action}</div> : null}
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+      ) : null}
     </header>
   );
 }
