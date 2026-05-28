@@ -1,4 +1,4 @@
-# TUBIKORERE — SHADCN DESIGN SYSTEM (REMAKE)
+# TUBYIKORERE — SHADCN DESIGN SYSTEM (REMAKE)
 
 This document replaces the previous design-system spec.
 It is now the source of truth for the **Shadcn-first** UI architecture currently implemented in `apps/web`.

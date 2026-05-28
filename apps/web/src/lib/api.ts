@@ -8,7 +8,7 @@ export const api = axios.create({
 });
 
 const ADMIN_API_TOKEN =
-  import.meta.env.VITE_ADMIN_API_TOKEN ?? "tubikorere-dev-admin";
+  import.meta.env.VITE_ADMIN_API_TOKEN ?? "tubyikorere-dev-admin";
 
 api.interceptors.request.use((config) => {
   const { isAuthenticated, role, entityId } = useAppStore.getState();

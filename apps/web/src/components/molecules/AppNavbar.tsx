@@ -25,7 +25,7 @@ export type NavbarBreadcrumb = {
 export type AppNavbarProps = {
   /** Current page shown as the last breadcrumb segment */
   title: string;
-  /** Optional trail before the current page, e.g. [{ label: "Tubikorere", href: "/" }] */
+  /** Optional trail before the current page, e.g. [{ label: "Tubyikorere", href: "/" }] */
   breadcrumbs?: NavbarBreadcrumb[];
   /** Right-side actions — buttons, menus, etc. */
   actions?: ReactNode;

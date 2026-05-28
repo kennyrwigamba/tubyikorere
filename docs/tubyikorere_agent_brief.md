@@ -1,14 +1,14 @@
-# TUBIKORERE — AI AGENT BUILD BRIEF
+# TUBYIKORERE — AI AGENT BUILD BRIEF
 ## Claude Builder Club Hackathon · Social Impact Track · Governance & Collaboration
 
-> **This document is the single source of truth for building Tubikorere.**
+> **This document is the single source of truth for building Tubyikorere.**
 > Read it fully before writing a single line. Every decision here has a reason.
 
 ---
 
 ## WHAT WE ARE BUILDING AND WHY
 
-Tubikorere (Kinyarwanda: "Let's handle it together") is an AI-powered community governance platform that connects two things in Rwanda that have never been connected:
+Tubyikorere (Kinyarwanda: "Let's handle it together") is an AI-powered community governance platform that connects two things in Rwanda that have never been connected:
 
 1. **Community issue reporting** — citizens submit problems (broken roads, water outages, collapsing walls). Currently this happens verbally or in notebooks that get lost.
 2. **Umuganda** — Rwanda's mandatory monthly community work day (last Saturday of every month, 8am–11am, 18–65 year-olds). Currently workers show up with no organized task list.
@@ -99,7 +99,7 @@ Replaces manual `useEffect` + `useState` loading patterns entirely. One hook giv
 ## PROJECT STRUCTURE
 
 ```
-tubikorere/
+tubyikorere/
 ├── apps/
 │   ├── web/                         # React frontend (Vite)
 │   │   ├── src/
@@ -167,7 +167,7 @@ tubikorere/
 └── package.json                     # Workspace root (pnpm workspaces)
 ```
 
-Use **pnpm workspaces** as the monorepo manager. This lets the frontend import from `@tubikorere/shared` and the backend also import from `@tubikorere/shared` — no duplicated Zod schemas.
+Use **pnpm workspaces** as the monorepo manager. This lets the frontend import from `@tubyikorere/shared` and the backend also import from `@tubyikorere/shared` — no duplicated Zod schemas.
 
 ---
 
@@ -480,9 +480,9 @@ Hard stops. Do not build these for the demo.
 
 Opening: "In Rwanda, a citizen reports a broken bridge near a school. The cell executive writes it in a notebook. Three months later, the notebook is lost. The bridge is still broken. Children are still crossing a river every morning. This is not because nobody cared. It is because there was no system connecting that report to the 180 people who show up every last Saturday ready to work."
 
-What we built: "Tubikorere — Let's handle it together. Citizens report in Kinyarwanda. Claude scores severity. The most critical issues get assigned to the next umuganda session. Claude generates the sector report. The loop closes. The bridge gets fixed."
+What we built: "Tubyikorere — Let's handle it together. Citizens report in Kinyarwanda. Claude scores severity. The most critical issues get assigned to the next umuganda session. Claude generates the sector report. The loop closes. The bridge gets fixed."
 
-Why it matters: "14,837 villages. Every one with the same broken notebook. Umuganda has contributed $60 million to Rwanda's development since 2007 — but it operates blind. Tubikorere gives it eyes."
+Why it matters: "14,837 villages. Every one with the same broken notebook. Umuganda has contributed $60 million to Rwanda's development since 2007 — but it operates blind. Tubyikorere gives it eyes."
 
 ---
 

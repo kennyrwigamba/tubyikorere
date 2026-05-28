@@ -191,7 +191,7 @@ adminRoutes.get("/users", async (c) => {
       id: "admin",
       name: "System Admin",
       role: "admin" as const,
-      entity_name: "Tubikorere Admin",
+      entity_name: "Tubyikorere Admin",
       phone: process.env.ADMIN_PHONE ?? "+250788000099",
       status: "active" as const,
     },

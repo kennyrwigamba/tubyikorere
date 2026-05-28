@@ -21,7 +21,7 @@ function isPublicRoute(method: string, path: string) {
   return false;
 }
 
-const ADMIN_API_TOKEN = process.env.ADMIN_API_TOKEN ?? "tubikorere-dev-admin";
+const ADMIN_API_TOKEN = process.env.ADMIN_API_TOKEN ?? "tubyikorere-dev-admin";
 
 export async function authMiddleware(c: Context, next: Next) {
   if (isPublicRoute(c.req.method, c.req.path)) {

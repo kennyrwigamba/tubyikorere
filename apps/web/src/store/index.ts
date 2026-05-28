@@ -50,7 +50,7 @@ export const useAppStore = create<AuthState>()(
         }),
     }),
     {
-      name: "tubikorere-auth",
+      name: "tubyikorere-auth",
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         role: state.role,

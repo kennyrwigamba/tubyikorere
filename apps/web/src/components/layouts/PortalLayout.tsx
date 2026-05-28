@@ -72,7 +72,7 @@ export function PortalLayout({ title, roleLabel, items }: PortalLayoutProps) {
       }}
       navbar={{
         title: pageTitle,
-        breadcrumbs: [{ label: "Tubikorere" }],
+        breadcrumbs: [{ label: "Tubyikorere" }],
         showNotifications: true,
       }}
     >

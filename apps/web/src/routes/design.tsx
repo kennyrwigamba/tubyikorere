@@ -22,7 +22,7 @@ export default function DesignRoute() {
       navbar={{
         title: "Overview",
         breadcrumbs: [
-          { label: "Tubikorere", href: "/design" },
+          { label: "Tubyikorere", href: "/design" },
           { label: "Kimironko Cell", href: "/design" },
         ],
         actions: <Button size="sm">Plan umuganda</Button>,

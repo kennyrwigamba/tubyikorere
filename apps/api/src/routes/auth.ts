@@ -76,7 +76,7 @@ authRoutes.post("/login", async (c) => {
       user_id: "admin",
       role: "admin" satisfies AuthRole,
       user_name: "System Admin",
-      entity_name: "Tubikorere Admin",
+      entity_name: "Tubyikorere Admin",
       entity_id: "admin",
       is_first_login: false,
     });

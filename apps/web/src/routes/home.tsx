@@ -48,7 +48,7 @@ export default function HomeRoute() {
           <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <MapPinIcon className="size-7" aria-hidden />
           </div>
-          <p className="text-sm font-semibold tracking-wide text-primary uppercase">Tubikorere</p>
+          <p className="text-sm font-semibold tracking-wide text-primary uppercase">Tubyikorere</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Let&apos;s handle it together
           </h1>

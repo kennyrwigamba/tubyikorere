@@ -90,7 +90,7 @@ export async function scoreIssue(rawText: string, context: ScoreIssueContext) {
     .join("\n");
 
   const prompt = `
-You are analyzing a citizen issue for Rwanda's community governance platform Tubikorere.
+You are analyzing a citizen issue for Rwanda's community governance platform Tubyikorere.
 Kinyarwanda text is expected and must be processed correctly.
 
 Location:
@@ -252,7 +252,7 @@ Return ONLY valid JSON (no markdown, no code blocks, no preamble) in this exact 
 export async function generateReport(sessionData: SessionDataInput) {
   const fallback = {
     report_text:
-      "Tubikorere report draft could not be generated automatically. Please compile attendance, completed work, and escalation details manually for submission.",
+      "Tubyikorere report draft could not be generated automatically. Please compile attendance, completed work, and escalation details manually for submission.",
     key_achievements: ["Automatic report generation unavailable"],
     escalations: [] as string[],
     attendance_rate: 0,

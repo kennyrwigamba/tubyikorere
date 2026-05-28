@@ -1,4 +1,4 @@
-# TUBIKORERE — USER FLOWS & PAGE MAP
+# TUBYIKORERE — USER FLOWS & PAGE MAP
 ## What every user sees, in order, with purpose.
 
 ---

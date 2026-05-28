@@ -366,7 +366,7 @@ export default function SubmitRoute() {
 
         <Card>
           <CardHeader>
-            <p className="text-sm font-semibold text-primary">Tubikorere</p>
+            <p className="text-sm font-semibold text-primary">Tubyikorere</p>
             <CardTitle>Submit an issue / Ohereza ikibazo</CardTitle>
             <CardDescription>
               Tell us where the problem is, describe it, and add a photo so we can prioritize fairly

@@ -74,7 +74,7 @@ export default function TrackIssueRoute() {
     <TrackShell>
       <Card>
         <CardHeader>
-          <p className="text-sm font-semibold text-primary">Tubikorere</p>
+          <p className="text-sm font-semibold text-primary">Tubyikorere</p>
           <CardTitle>Issue status / Imiterere y&apos;ikibazo</CardTitle>
           <CardDescription>Reference: {data.reference.toUpperCase()}</CardDescription>
         </CardHeader>

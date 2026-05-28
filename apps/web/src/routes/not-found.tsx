@@ -15,7 +15,7 @@ export default function NotFoundRoute() {
             404
           </CardTitle>
           <CardDescription>
-            Tubikorere couldn&apos;t find that route. Check the link or return home.
+            Tubyikorere couldn&apos;t find that route. Check the link or return home.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">

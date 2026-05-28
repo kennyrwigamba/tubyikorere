@@ -39,7 +39,7 @@ export default function AdminSettingsRoute() {
               <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 Organization
               </p>
-              <p className="text-sm font-medium">{entityName || "Tubikorere Admin"}</p>
+              <p className="text-sm font-medium">{entityName || "Tubyikorere Admin"}</p>
             </div>
           </CardContent>
         </Card>
