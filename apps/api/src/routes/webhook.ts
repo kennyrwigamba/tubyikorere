@@ -6,6 +6,8 @@ import { DEMO_CELL_ID, DEMO_CELL_NAME } from "../db/demo-config";
 import { db } from "../db/client";
 import { cells, issues, sectors } from "../db/schema";
 import { scoreIssue } from "../services/claude";
+import { uploadIssuePhoto } from "../services/storage";
+import { fetchTwilioMediaAsWebpFile } from "../services/twilio-media";
 
 const demoCellId = process.env.DEMO_CELL_ID ?? DEMO_CELL_ID;
 
@@ -76,8 +78,14 @@ webhookRoutes.post("/whatsapp", async (c) => {
     const body = await c.req.parseBody();
     const messageText = String(body["Body"] ?? "").trim();
     const fromRaw = String(body["From"] ?? "").trim();
+    const numMedia = Number(String(body["NumMedia"] ?? "0"));
+    const mediaUrl = String(body["MediaUrl0"] ?? "").trim();
+    const mediaContentType = String(body["MediaContentType0"] ?? "").trim().toLowerCase();
+    const accountSid = String(body["AccountSid"] ?? "").trim() || undefined;
 
-    if (!messageText) {
+    const hasImageAttachment = numMedia > 0 && Boolean(mediaUrl) && Boolean(mediaContentType);
+
+    if (!messageText && !hasImageAttachment) {
       return twimlResponse(c, EMPTY_BODY_REPLY);
     }
 
@@ -96,8 +104,25 @@ webhookRoutes.post("/whatsapp", async (c) => {
       .where(eq(sectors.id, cell.sectorId))
       .limit(1);
 
-    const textForClaude = messageText.slice(0, MAX_CLAUDE_INPUT_CHARS);
-    const storedText = messageText.slice(0, MAX_CLAUDE_INPUT_CHARS);
+    const storedText = (messageText || "Photo report submitted via WhatsApp").slice(
+      0,
+      MAX_CLAUDE_INPUT_CHARS,
+    );
+    const textForClaude = storedText;
+    let photoUrl: string | null = null;
+
+    if (hasImageAttachment) {
+      try {
+        const photoFile = await fetchTwilioMediaAsWebpFile(
+          mediaUrl,
+          mediaContentType,
+          accountSid,
+        );
+        photoUrl = await uploadIssuePhoto(photoFile);
+      } catch (error) {
+        console.error("WhatsApp webhook: media processing failed", error);
+      }
+    }
 
     let scored: Awaited<ReturnType<typeof scoreIssue>> = {
       ...DEFAULT_SCORE,
@@ -107,6 +132,7 @@ webhookRoutes.post("/whatsapp", async (c) => {
       scored = await scoreIssue(textForClaude, {
         cellName: cell.name,
         sectorName: sector?.name ?? "Unknown Sector",
+        photoUrl,
       });
     } catch (error) {
       console.error("WhatsApp webhook: Claude scoring failed", error);
@@ -121,6 +147,7 @@ webhookRoutes.post("/whatsapp", async (c) => {
         rawText: storedText,
         submissionChannel: "whatsapp",
         submitterPhone,
+        photoUrl,
         languageDetected: scored.language_detected,
         category: scored.category as typeof issues.$inferInsert.category,
         severity: scored.severity,

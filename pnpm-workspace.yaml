@@ -4,5 +4,6 @@ packages:
 allowBuilds:
   esbuild: true
   msw: true
+  sharp: true
 minimumReleaseAgeExclude:
   - '@anthropic-ai/sdk@0.99.0'
