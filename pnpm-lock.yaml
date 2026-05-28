@@ -38,6 +38,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.9
+      tsx:
+        specifier: ^4.20.6
+        version: 4.22.3
       twilio:
         specifier: ^6.0.0
         version: 6.0.2
@@ -48,9 +51,6 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
-      tsx:
-        specifier: ^4.20.6
-        version: 4.22.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
