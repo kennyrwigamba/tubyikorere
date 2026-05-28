@@ -5,7 +5,11 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
-    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:api\""
+    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:api\"",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm --filter api typecheck",
+    "build": "pnpm --filter web build && pnpm --filter api typecheck",
+    "check": "pnpm lint && pnpm build"
   },
   "dependencies": {
     "concurrently": "^9.1.2"
