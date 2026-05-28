@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:ensure-demo": "tsx src/db/ensure-demo-auth.ts",
+    "db:reset-demo": "tsx src/db/reset-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.99.0",

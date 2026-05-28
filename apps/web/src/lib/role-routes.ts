@@ -7,3 +7,10 @@ export const ROLE_DEFAULT_ROUTE: Record<Role, string> = {
   admin: "/admin/dashboard",
 };
 
+export const ROLE_SETTINGS_ROUTE: Record<Role, string> = {
+  cell_executive: "/cell-executive/settings",
+  village_coordinator: "/coordinator/settings",
+  sector_official: "/sector-official/settings",
+  admin: "/admin/settings",
+};
+

@@ -74,6 +74,20 @@ attendanceRoutes.post("/", async (c) => {
   return c.json(saved);
 });
 
+attendanceRoutes.get("/:session_id/completions", async (c) => {
+  const sessionId = c.req.param("session_id");
+  const rows = await db
+    .select({
+      completion: workCompletions,
+      issue_summary: issues.summary,
+    })
+    .from(workCompletions)
+    .innerJoin(issues, eq(workCompletions.issueId, issues.id))
+    .where(eq(workCompletions.sessionId, sessionId));
+
+  return c.json(rows);
+});
+
 attendanceRoutes.get("/:session_id", async (c) => {
   const sessionId = c.req.param("session_id");
   const rows = await db
@@ -93,16 +107,42 @@ attendanceRoutes.post("/work-completion", async (c) => {
   const parsed = workCompletionSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
 
-  const [saved] = await db
-    .insert(workCompletions)
-    .values({
-      sessionId: parsed.data.session_id,
-      issueId: parsed.data.issue_id,
-      completionStatus: parsed.data.completion_status,
-      completionNotes: parsed.data.completion_notes,
-      photoUrl: parsed.data.photo_url ?? null,
-    })
-    .returning();
+  const data = parsed.data;
+  const [existing] = await db
+    .select()
+    .from(workCompletions)
+    .where(
+      and(
+        eq(workCompletions.sessionId, data.session_id),
+        eq(workCompletions.issueId, data.issue_id),
+      ),
+    )
+    .limit(1);
+
+  let saved;
+  if (existing) {
+    [saved] = await db
+      .update(workCompletions)
+      .set({
+        completionStatus: data.completion_status,
+        completionNotes: data.completion_notes,
+        photoUrl: data.photo_url ?? null,
+        recordedAt: new Date(),
+      })
+      .where(eq(workCompletions.id, existing.id))
+      .returning();
+  } else {
+    [saved] = await db
+      .insert(workCompletions)
+      .values({
+        sessionId: data.session_id,
+        issueId: data.issue_id,
+        completionStatus: data.completion_status,
+        completionNotes: data.completion_notes,
+        photoUrl: data.photo_url ?? null,
+      })
+      .returning();
+  }
 
   const issueStatus =
     parsed.data.completion_status === "partial"

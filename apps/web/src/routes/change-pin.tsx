@@ -50,7 +50,7 @@ function getErrorMessage(error: unknown): string {
 
 export default function ChangePinRoute() {
   const navigate = useNavigate();
-  const { isAuthenticated, role, isFirstLogin, entityId, setAuth } = useAppStore();
+  const { isAuthenticated, role, isFirstLogin, userId, setAuth } = useAppStore();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -93,16 +93,12 @@ export default function ChangePinRoute() {
     }
 
     try {
-      await api.post(
-        "/api/auth/change-pin",
-        {
-          current_pin: parsed.data.current_pin,
-          new_pin: parsed.data.new_pin,
-        },
-        {
-          headers: entityId ? { "x-cell-id": entityId } : undefined,
-        },
-      );
+      await api.post("/api/auth/change-pin", {
+        current_pin: parsed.data.current_pin,
+        new_pin: parsed.data.new_pin,
+        role,
+        user_id: userId,
+      });
 
       setAuth({ isFirstLogin: false });
       navigate(ROLE_DEFAULT_ROUTE[role], { replace: true });

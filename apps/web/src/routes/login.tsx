@@ -181,6 +181,11 @@ export default function LoginRoute() {
               <LogInIcon className="size-4" />
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
+
+            <p className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Demo — Cell executive: <span className="font-mono">+250788000001</span> / PIN{" "}
+              <span className="font-mono">1234</span>
+            </p>
           </form>
         </CardContent>
       </Card>

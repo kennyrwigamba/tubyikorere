@@ -87,6 +87,11 @@ export const sectors = pgTable("sectors", {
   name: text("name").notNull(),
   nameKinyarwanda: text("name_kinyarwanda").notNull(),
   code: text("code").notNull().unique(),
+  officialName: text("official_name"),
+  officialPhone: text("official_phone"),
+  // Demo-only: plain text PIN (production would hash).
+  pin: text("pin"),
+  isFirstLogin: boolean("is_first_login").notNull().default(true),
 });
 
 export const cells = pgTable("cells", {
@@ -100,6 +105,7 @@ export const cells = pgTable("cells", {
   executivePhone: text("executive_phone").notNull(),
   // Demo-only: plain text PIN (production would hash).
   pin: text("pin").notNull(),
+  isFirstLogin: boolean("is_first_login").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -114,6 +120,9 @@ export const villages = pgTable("villages", {
   nameKinyarwanda: text("name_kinyarwanda").notNull(),
   coordinatorName: text("coordinator_name"),
   coordinatorPhone: text("coordinator_phone"),
+  // Demo-only: plain text PIN (production would hash).
+  pin: text("pin"),
+  isFirstLogin: boolean("is_first_login").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -7,5 +7,6 @@ export type { AppSidebarProps } from "./AppSidebar";
 export { AssignmentGroup } from "./AssignmentGroup";
 export { IssueCard, IssueCardList } from "./IssueCard";
 export { PageHeader } from "./PageHeader";
+export { ReportDocument } from "./ReportDocument";
 export { StatCard, StatCardGrid } from "./StatCard";
 export { TrendBadge } from "./TrendBadge";

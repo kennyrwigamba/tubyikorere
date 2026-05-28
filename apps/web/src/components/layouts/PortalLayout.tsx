@@ -1,7 +1,24 @@
 import type { LucideIcon } from "lucide-react";
-import { Home, FileText, ListTodo, Menu, User, ShieldCheck, ClipboardCheck, Map, Settings, Users } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import {
+  ActivityIcon,
+  AlertTriangleIcon,
+  Building2Icon,
+  ClipboardCheck,
+  FileText,
+  GitBranchIcon,
+  Home,
+  ListTodo,
+  MapPinIcon,
+  Settings,
+  ShieldCheck,
+  User,
+  Users,
+} from "lucide-react";
+import { Outlet, useLocation } from "react-router-dom";
+
+import { AppShell } from "@/components/molecules/AppShell";
+import type { SidebarNavItem } from "@/lib/types/nav";
+import { useAppStore } from "@/store";
 
 type PortalItem = {
   to: string;
@@ -15,60 +32,54 @@ type PortalLayoutProps = {
   items: PortalItem[];
 };
 
+function toNavItems(items: PortalItem[], pathname: string): SidebarNavItem[] {
+  return items.map((item) => ({
+    title: item.label,
+    url: item.to,
+    icon: item.icon,
+    isActive: pathname === item.to || pathname.startsWith(`${item.to}/`),
+  }));
+}
+
+function getPageTitle(items: PortalItem[], pathname: string, fallback: string) {
+  const match = items.find(
+    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
+  return match?.label ?? fallback;
+}
+
 export function PortalLayout({ title, roleLabel, items }: PortalLayoutProps) {
+  const { pathname } = useLocation();
+  const { userName, entityName } = useAppStore();
+
+  const navItems = toNavItems(items, pathname);
+  const pageTitle = getPageTitle(items, pathname, title);
+
   return (
-    <div className="min-h-screen bg-background">
-      <aside className="hidden w-60 flex-col border-r bg-card p-4 md:flex">
-        <div className="mb-6">
-          <p className="text-xs font-medium text-muted-foreground">Tubikorere</p>
-          <p className="text-xl font-bold">{title}</p>
-          <p className="text-sm text-muted-foreground">{roleLabel}</p>
-        </div>
-        <nav className="space-y-1">
-          {items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-md border-l-2 border-transparent px-3 py-2 text-sm",
-                  isActive
-                    ? "border-l-primary bg-secondary text-secondary-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-muted"
-                )
-              }
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      <main className="pb-20 md:pb-0 md:pl-60">
-        <div className="mx-auto w-full max-w-6xl p-4 md:p-6">
-          <Outlet />
-        </div>
-      </main>
-
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card p-2 md:hidden">
-        {items.slice(0, 5).map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                "flex min-h-11 flex-col items-center justify-center gap-1 rounded-md text-xs",
-                isActive ? "text-primary font-medium" : "text-muted-foreground"
-              )
-            }
-          >
-            <item.icon className="size-4" />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    <AppShell
+      sidebar={{
+        brand: {
+          name: entityName || title,
+          subtitle: roleLabel,
+          icon: MapPinIcon,
+        },
+        user: {
+          name: userName || roleLabel,
+          email: title,
+        },
+        navItems,
+        navLabel: title,
+      }}
+      navbar={{
+        title: pageTitle,
+        breadcrumbs: [{ label: "Tubikorere" }],
+        showNotifications: true,
+      }}
+    >
+      <div className="@container/main flex flex-1 flex-col">
+        <Outlet />
+      </div>
+    </AppShell>
   );
 }
 
@@ -77,26 +88,27 @@ export const execItems: PortalItem[] = [
   { to: "/cell-executive/issues", label: "Issues", icon: ListTodo },
   { to: "/cell-executive/umuganda", label: "Umuganda", icon: ClipboardCheck },
   { to: "/cell-executive/reports", label: "Reports", icon: FileText },
-  { to: "/cell-executive/menu", label: "Menu", icon: Menu },
+  { to: "/cell-executive/settings", label: "Settings", icon: Settings },
 ];
 
 export const coordinatorItems: PortalItem[] = [
   { to: "/coordinator/home", label: "Home", icon: Home },
   { to: "/coordinator/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/coordinator/village", label: "My Village", icon: User },
-  { to: "/coordinator/menu", label: "Menu", icon: Menu },
+  { to: "/coordinator/settings", label: "Settings", icon: Settings },
 ];
 
 export const sectorItems: PortalItem[] = [
   { to: "/sector-official/overview", label: "Overview", icon: Home },
   { to: "/sector-official/reports", label: "Reports", icon: FileText },
-  { to: "/sector-official/map", label: "Map", icon: Map },
-  { to: "/sector-official/menu", label: "Menu", icon: Menu },
+  { to: "/sector-official/escalations", label: "Escalations", icon: AlertTriangleIcon },
+  { to: "/sector-official/cells", label: "Cells", icon: Building2Icon },
+  { to: "/sector-official/settings", label: "Settings", icon: Settings },
 ];
 
 export const adminItems: PortalItem[] = [
   { to: "/admin/dashboard", label: "Dashboard", icon: ShieldCheck },
-  { to: "/admin/cells", label: "Cells", icon: Home },
+  { to: "/admin/hierarchy", label: "Hierarchy", icon: GitBranchIcon },
   { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/admin/activity", label: "Activity", icon: ActivityIcon },
 ];

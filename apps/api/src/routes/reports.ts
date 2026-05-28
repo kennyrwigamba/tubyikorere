@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../db/client";
@@ -21,6 +21,28 @@ const generateSchema = z.object({
 });
 
 export const reportsRoutes = new Hono();
+
+reportsRoutes.get("/", async (c) => {
+  const cellId = c.req.query("cell_id");
+  if (!cellId) return c.json({ error: "cell_id is required" }, 400);
+
+  const rows = await db
+    .select({
+      session: umugandaSessions,
+      report: sectorReports,
+    })
+    .from(umugandaSessions)
+    .leftJoin(sectorReports, eq(sectorReports.sessionId, umugandaSessions.id))
+    .where(
+      and(
+        eq(umugandaSessions.cellId, cellId),
+        inArray(umugandaSessions.status, ["active", "completed"]),
+      ),
+    )
+    .orderBy(desc(umugandaSessions.sessionDate));
+
+  return c.json(rows);
+});
 
 reportsRoutes.post("/generate", async (c) => {
   const body = await c.req.json().catch(() => null);
@@ -125,6 +147,22 @@ reportsRoutes.post("/generate", async (c) => {
   return c.json(saved, 201);
 });
 
+reportsRoutes.get("/session/:sessionId", async (c) => {
+  const sessionId = c.req.param("sessionId");
+  const [row] = await db
+    .select({
+      report: sectorReports,
+      session: umugandaSessions,
+    })
+    .from(sectorReports)
+    .innerJoin(umugandaSessions, eq(sectorReports.sessionId, umugandaSessions.id))
+    .where(eq(sectorReports.sessionId, sessionId))
+    .limit(1);
+
+  if (!row) return c.json({ error: "Report not found" }, 404);
+  return c.json(row);
+});
+
 reportsRoutes.get("/:id", async (c) => {
   const id = c.req.param("id");
   const [row] = await db
@@ -148,6 +186,23 @@ reportsRoutes.patch("/:id/approve", async (c) => {
     .set({
       status: "approved",
       approvedAt: new Date(),
+    })
+    .where(eq(sectorReports.id, id))
+    .returning();
+
+  if (!updated) return c.json({ error: "Report not found" }, 404);
+  return c.json(updated);
+});
+
+reportsRoutes.patch("/:id/submit", async (c) => {
+  const id = c.req.param("id");
+  const now = new Date();
+  const [updated] = await db
+    .update(sectorReports)
+    .set({
+      status: "submitted",
+      approvedAt: now,
+      submittedAt: now,
     })
     .where(eq(sectorReports.id, id))
     .returning();

@@ -17,3 +17,17 @@ export type IssuePreview = {
   createdAt: string | Date;
   requiresEscalation?: boolean;
 };
+
+/** Full issue detail — matches API GET /issues/:id response. */
+export type IssueDetail = IssuePreview & {
+  rawText: string;
+  severityReason: string;
+  recommendedAction: string;
+  estimatedParticipants: number;
+  escalationReason: string | null;
+  resolutionNotes: string | null;
+  updatedAt: string;
+  umugandaSessionId: string | null;
+  languageDetected: string | null;
+  submitterPhone: string | null;
+};

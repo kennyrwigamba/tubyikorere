@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const MODEL = "claude-sonnet-4-20250514";
+// Haiku 4.5 — cheaper for local/testing. Override via ANTHROPIC_MODEL.
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -44,9 +45,16 @@ function getTextFromResponse(
   return textBlock && "text" in textBlock ? String(textBlock.text) : "";
 }
 
+function extractJsonText(text: string): string {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)```\s*$/i);
+  if (fenced) return fenced[1].trim();
+  return trimmed;
+}
+
 function safeJsonParse<T>(text: string, fallback: T): T {
   try {
-    return JSON.parse(text) as T;
+    return JSON.parse(extractJsonText(text)) as T;
   } catch {
     return fallback;
   }

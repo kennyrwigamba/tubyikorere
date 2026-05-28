@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../db/client";
@@ -19,9 +19,32 @@ umugandaRoutes.get("/", async (c) => {
   if (!cellId) return c.json({ error: "cell_id is required" }, 400);
 
   const rows = await db
-    .select()
+    .select({
+      id: umugandaSessions.id,
+      cellId: umugandaSessions.cellId,
+      sessionDate: umugandaSessions.sessionDate,
+      expectedParticipants: umugandaSessions.expectedParticipants,
+      actualParticipants: umugandaSessions.actualParticipants,
+      status: umugandaSessions.status,
+      planningNotes: umugandaSessions.planningNotes,
+      createdAt: umugandaSessions.createdAt,
+      updatedAt: umugandaSessions.updatedAt,
+      assignmentCount: sql<number>`cast(count(${sessionAssignments.id}) as int)`,
+    })
     .from(umugandaSessions)
+    .leftJoin(sessionAssignments, eq(sessionAssignments.sessionId, umugandaSessions.id))
     .where(eq(umugandaSessions.cellId, cellId))
+    .groupBy(
+      umugandaSessions.id,
+      umugandaSessions.cellId,
+      umugandaSessions.sessionDate,
+      umugandaSessions.expectedParticipants,
+      umugandaSessions.actualParticipants,
+      umugandaSessions.status,
+      umugandaSessions.planningNotes,
+      umugandaSessions.createdAt,
+      umugandaSessions.updatedAt,
+    )
     .orderBy(desc(umugandaSessions.sessionDate));
 
   return c.json(rows);
@@ -54,6 +77,16 @@ umugandaRoutes.post("/:id/plan", async (c) => {
     .limit(1);
 
   if (!session) return c.json({ error: "Session not found" }, 404);
+
+  const [existingAssignment] = await db
+    .select({ id: sessionAssignments.id })
+    .from(sessionAssignments)
+    .where(eq(sessionAssignments.sessionId, sessionId))
+    .limit(1);
+
+  if (existingAssignment) {
+    return c.json({ error: "Work plan already generated for this session" }, 409);
+  }
 
   const openIssues = await db
     .select({
@@ -97,11 +130,26 @@ umugandaRoutes.post("/:id/plan", async (c) => {
       .where(inArray(issues.id, assignedIds));
   }
 
+  await db
+    .update(umugandaSessions)
+    .set({
+      planningNotes: planned.planning_notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(umugandaSessions.id, session.id));
+
+  const [updatedSession] = await db
+    .select()
+    .from(umugandaSessions)
+    .where(eq(umugandaSessions.id, session.id))
+    .limit(1);
+
   return c.json({
-    session,
+    session: updatedSession ?? session,
     assignments: planned.assignments,
     planning_notes: planned.planning_notes,
     unassigned_issue_ids: planned.unassigned_issue_ids,
+    unassigned_reason: planned.unassigned_reason ?? null,
   });
 });
 
@@ -119,10 +167,64 @@ umugandaRoutes.get("/:id", async (c) => {
     .select({
       assignment: sessionAssignments,
       issue_summary: issues.summary,
+      issue_severity: issues.severity,
     })
     .from(sessionAssignments)
     .innerJoin(issues, eq(sessionAssignments.issueId, issues.id))
-    .where(eq(sessionAssignments.sessionId, sessionId));
+    .where(eq(sessionAssignments.sessionId, sessionId))
+    .orderBy(sessionAssignments.displayOrder);
 
   return c.json({ session, assignments });
+});
+
+umugandaRoutes.patch("/:id/confirm", async (c) => {
+  const sessionId = c.req.param("id");
+  const [session] = await db
+    .select()
+    .from(umugandaSessions)
+    .where(eq(umugandaSessions.id, sessionId))
+    .limit(1);
+
+  if (!session) return c.json({ error: "Session not found" }, 404);
+  if (session.status === "completed") {
+    return c.json({ error: "Session is already completed" }, 400);
+  }
+
+  const [assignment] = await db
+    .select({ id: sessionAssignments.id })
+    .from(sessionAssignments)
+    .where(eq(sessionAssignments.sessionId, sessionId))
+    .limit(1);
+
+  if (!assignment) {
+    return c.json({ error: "Generate a work plan before confirming" }, 400);
+  }
+
+  const [updated] = await db
+    .update(umugandaSessions)
+    .set({ status: "active", updatedAt: new Date() })
+    .where(eq(umugandaSessions.id, sessionId))
+    .returning();
+
+  return c.json(updated);
+});
+
+umugandaRoutes.patch("/:id/complete", async (c) => {
+  const sessionId = c.req.param("id");
+  const [session] = await db
+    .select()
+    .from(umugandaSessions)
+    .where(eq(umugandaSessions.id, sessionId))
+    .limit(1);
+
+  if (!session) return c.json({ error: "Session not found" }, 404);
+  if (session.status === "completed") return c.json(session);
+
+  const [updated] = await db
+    .update(umugandaSessions)
+    .set({ status: "completed", updatedAt: new Date() })
+    .where(eq(umugandaSessions.id, sessionId))
+    .returning();
+
+  return c.json(updated);
 });
