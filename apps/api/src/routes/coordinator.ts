@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
+import type { AppEnv } from "../app-env";
 import { db } from "../db/client";
 import {
   attendanceRecords,
@@ -15,7 +16,7 @@ import {
   workCompletions,
 } from "../db/schema";
 
-export const coordinatorRoutes = new Hono();
+export const coordinatorRoutes = new Hono<AppEnv>();
 
 async function getVillageForCell(villageId: string, cellId: string) {
   const [village] = await db
@@ -61,6 +62,7 @@ coordinatorRoutes.get("/home", async (c) => {
   if (!villageId) return c.json({ error: "village_id is required" }, 400);
 
   const cell = c.get("cell");
+  if (!cell) return c.json({ error: "Unauthorized" }, 401);
   const village = await getVillageForCell(villageId, cell.id);
   if (!village) return c.json({ error: "Village not found" }, 404);
 
@@ -97,6 +99,7 @@ coordinatorRoutes.get("/attendance", async (c) => {
   if (!villageId) return c.json({ error: "village_id is required" }, 400);
 
   const cell = c.get("cell");
+  if (!cell) return c.json({ error: "Unauthorized" }, 401);
   const village = await getVillageForCell(villageId, cell.id);
   if (!village) return c.json({ error: "Village not found" }, 404);
 
@@ -157,6 +160,7 @@ coordinatorRoutes.get("/profile", async (c) => {
   if (!villageId) return c.json({ error: "village_id is required" }, 400);
 
   const cell = c.get("cell");
+  if (!cell) return c.json({ error: "Unauthorized" }, 401);
   const village = await getVillageForCell(villageId, cell.id);
   if (!village) return c.json({ error: "Village not found" }, 404);
 

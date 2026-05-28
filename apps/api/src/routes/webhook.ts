@@ -99,7 +99,10 @@ webhookRoutes.post("/whatsapp", async (c) => {
     const textForClaude = messageText.slice(0, MAX_CLAUDE_INPUT_CHARS);
     const storedText = messageText.slice(0, MAX_CLAUDE_INPUT_CHARS);
 
-    let scored = { ...DEFAULT_SCORE, summary: storedText.slice(0, 100) };
+    let scored: Awaited<ReturnType<typeof scoreIssue>> = {
+      ...DEFAULT_SCORE,
+      summary: storedText.slice(0, 100),
+    };
     try {
       scored = await scoreIssue(textForClaude, {
         cellName: cell.name,

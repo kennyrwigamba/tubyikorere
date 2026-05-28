@@ -70,6 +70,8 @@ function citizenStatusLabel(status: typeof issues.$inferSelect.status) {
       };
     case "closed":
       return { en: "Closed", rw: "Byafunzwe" };
+    default:
+      return { en: "Unknown status", rw: "Imiterere itazwi" };
   }
 }
 

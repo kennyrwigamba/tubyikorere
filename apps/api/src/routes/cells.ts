@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 import { eq, asc } from "drizzle-orm";
 
+import type { AppEnv } from "../app-env";
 import { db } from "../db/client";
 import { cells, districts, provinces, sectors, villages } from "../db/schema";
 
-export const cellsRoutes = new Hono();
+export const cellsRoutes = new Hono<AppEnv>();
 
 cellsRoutes.get("/profile", async (c) => {
   const cell = c.get("cell");
+  if (!cell) return c.json({ error: "Unauthorized" }, 401);
 
   const [hierarchy] = await db
     .select({

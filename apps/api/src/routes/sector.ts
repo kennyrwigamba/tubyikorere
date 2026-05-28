@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { and, desc, eq, gte, inArray, lte, ne, or, sql } from "drizzle-orm";
 
+import type { AppEnv } from "../app-env";
 import { db } from "../db/client";
 import {
   cells,
@@ -13,7 +14,7 @@ import {
   villages,
 } from "../db/schema";
 
-export const sectorRoutes = new Hono();
+export const sectorRoutes = new Hono<AppEnv>();
 
 function monthRange(month: string) {
   const [year, mon] = month.split("-").map(Number);
@@ -24,6 +25,7 @@ function monthRange(month: string) {
 
 sectorRoutes.get("/overview", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
 
   const [hierarchy] = await db
     .select({
@@ -169,6 +171,7 @@ sectorRoutes.get("/overview", async (c) => {
 
 sectorRoutes.get("/reports", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
   const month = c.req.query("month") ?? new Date().toISOString().slice(0, 7);
   const { startStr, end } = monthRange(month);
   const startDate = `${startStr}-01`;
@@ -206,6 +209,7 @@ sectorRoutes.get("/reports", async (c) => {
 
 sectorRoutes.get("/reports/:id", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
   const id = c.req.param("id");
 
   const [row] = await db
@@ -226,6 +230,7 @@ sectorRoutes.get("/reports/:id", async (c) => {
 
 sectorRoutes.get("/escalations", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
 
   const rows = await db
     .select({
@@ -250,6 +255,7 @@ sectorRoutes.get("/escalations", async (c) => {
 
 sectorRoutes.get("/cells", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
 
   const sectorCells = await db.select().from(cells).where(eq(cells.sectorId, sectorId));
 
@@ -290,6 +296,7 @@ sectorRoutes.get("/cells", async (c) => {
 
 sectorRoutes.get("/profile", async (c) => {
   const sectorId = c.get("sectorId");
+  if (!sectorId) return c.json({ error: "Unauthorized" }, 401);
 
   const [hierarchy] = await db
     .select({

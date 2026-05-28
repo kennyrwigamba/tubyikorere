@@ -16,15 +16,9 @@ import { cellsRoutes } from "./routes/cells";
 import { webhookRoutes } from "./routes/webhook";
 import { sectorRoutes } from "./routes/sector";
 import { adminRoutes } from "./routes/admin";
-import { cells } from "./db/schema";
+import type { AppEnv } from "./app-env";
 
-type AppVariables = {
-  cell?: typeof cells.$inferSelect;
-  sectorId?: string;
-  isAdmin?: boolean;
-};
-
-const app = new Hono<{ Variables: AppVariables }>();
+const app = new Hono<AppEnv>();
 
 app.use("*", logger());
 app.use(

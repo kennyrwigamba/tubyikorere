@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 
 import { LoadingSpinner } from "@/components/atoms/LoadingSpinner";
-import { StatusBadge } from "@/components/atoms/StatusBadge";
 import { IssueCardList } from "@/components/molecules/IssueCard";
 import { PageHeader } from "@/components/molecules/PageHeader";
 import { StatCard, StatCardGrid } from "@/components/molecules/StatCard";
