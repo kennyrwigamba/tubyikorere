@@ -10,6 +10,10 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 type ScoreIssueContext = {
   cellName: string;
   sectorName: string;
+  districtName?: string;
+  provinceName?: string;
+  villageName?: string;
+  photoUrl?: string | null;
 };
 
 type ScoredIssueInput = {
@@ -75,20 +79,34 @@ export async function scoreIssue(rawText: string, context: ScoreIssueContext) {
 
   if (!anthropic) return fallback;
 
+  const locationLines = [
+    context.provinceName ? `- Province: ${context.provinceName}` : null,
+    context.districtName ? `- District: ${context.districtName}` : null,
+    `- Sector: ${context.sectorName}`,
+    `- Cell: ${context.cellName}`,
+    context.villageName ? `- Village: ${context.villageName}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const prompt = `
 You are analyzing a citizen issue for Rwanda's community governance platform Tubikorere.
 Kinyarwanda text is expected and must be processed correctly.
 
-Context:
-- Cell: ${context.cellName}
-- Sector: ${context.sectorName}
+Location:
+${locationLines}
+
+Important: Umuganda community work happens only once per month. Many issues compete for limited slots.
+Prioritize severity honestly — reserve 4-5 for issues that clearly need urgent action or show major harm in the photo.
 
 Severity rubric:
-- 5 = immediate safety risk
+- 5 = immediate safety risk (visible in photo or text)
 - 4 = major daily life impact
 - 3 = significant inconvenience
 - 2 = minor infrastructure issue
 - 1 = cosmetic issue
+
+${context.photoUrl ? "A site photo is attached. Use it to validate severity and describe visible damage." : "No photo was provided."}
 
 Return ONLY valid JSON (no markdown, no code blocks, no preamble) with this exact shape:
 {
@@ -107,11 +125,20 @@ Citizen text:
 ${rawText}
 `.trim();
 
+  const userContent: Anthropic.Messages.ContentBlockParam[] = [];
+  if (context.photoUrl) {
+    userContent.push({
+      type: "image",
+      source: { type: "url", url: context.photoUrl },
+    });
+  }
+  userContent.push({ type: "text", text: prompt });
+
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 700,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: userContent }],
     });
     return safeJsonParse(getTextFromResponse(response), fallback);
   } catch {

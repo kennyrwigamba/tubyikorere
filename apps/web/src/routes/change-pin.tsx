@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { ROLE_DEFAULT_ROUTE } from "@/lib/role-routes";
 import { useAppStore } from "@/store";
 
@@ -30,23 +31,6 @@ const changePinSchema = z
   });
 
 type ChangePinValues = z.infer<typeof changePinSchema>;
-
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof (error as { response?: unknown }).response === "object"
-  ) {
-    const response = (error as { response?: { data?: { error?: string; message?: string } } })
-      .response;
-    if (response?.data?.error) return response.data.error;
-    if (response?.data?.message) return response.data.message;
-  }
-
-  if (error instanceof Error) return error.message;
-  return "Unable to change PIN. Please try again.";
-}
 
 export default function ChangePinRoute() {
   const navigate = useNavigate();
@@ -103,7 +87,7 @@ export default function ChangePinRoute() {
       setAuth({ isFirstLogin: false });
       navigate(ROLE_DEFAULT_ROUTE[role], { replace: true });
     } catch (error) {
-      setServerError(getErrorMessage(error));
+      setServerError(getApiErrorMessage(error, "Unable to change PIN. Please try again."));
     }
   };
 

@@ -1,4 +1,5 @@
 import type { issues, villages } from "./schema";
+import type { DemoVillageName } from "./demo-config";
 
 type VillageRow = typeof villages.$inferSelect;
 
@@ -6,12 +7,14 @@ export function buildSeedIssues(
   cellId: string,
   villageByName: Map<string, VillageRow>,
 ): (typeof issues.$inferInsert)[] {
+  const v = (name: DemoVillageName) => villageByName.get(name)!.id;
+
   return [
     {
       cellId,
-      villageId: villageByName.get("Rugarama")!.id,
+      villageId: v("Abatuje"),
       rawText:
-        "Mwaramutse! Umuhanda ujya ku ishuri ribanza wuzura amazi cyane iyo imvura iguye. Abana banyerera bakagwa, hari n’aho imodoka zidashobora kuhanyura. Mudufashe kuwusanura no gukora inzira y’amazi.",
+        "Mwaramutse! Umuhanda ujya ku ishuri ribanza wuzura amazi cyane iyo imvura iguye. Abana banyerera bakagwa, hari n'aho imodoka zidashobora kuhanyura. Mudufashe kuwusanura no gukora inzira y'amazi.",
       submissionChannel: "whatsapp",
       submitterPhone: "+250788111111",
       languageDetected: "kinyarwanda",
@@ -28,9 +31,9 @@ export function buildSeedIssues(
     },
     {
       cellId,
-      villageId: villageByName.get("Rugarama")!.id,
+      villageId: v("Abatuje"),
       rawText:
-        "Muri Rugarama ingo zigera kuri 12 zimaze iminsi zidakura amazi meza. Umuyoboro w’amazi warangiritse, amazi ntakigerayo. Turasaba ubufasha bwo kuwusana vuba.",
+        "Muri Abatuje ingo zigera kuri 12 zimaze iminsi zidakura amazi meza. Umuyoboro w'amazi warangiritse, amazi ntakigerayo. Turasaba ubufasha bwo kuwusana vuba.",
       submissionChannel: "whatsapp",
       submitterPhone: "+250788222222",
       languageDetected: "kinyarwanda",
@@ -38,7 +41,7 @@ export function buildSeedIssues(
       severity: 4,
       severityReason:
         "Loss of clean water for multiple households has major daily-life impact and health risk.",
-      summary: "12 households in Rugarama lost clean water — pipe infrastructure damaged",
+      summary: "12 households in Abatuje lost clean water — pipe infrastructure damaged",
       recommendedAction: "Inspect and repair water pipe. Coordinate with sector water office",
       estimatedParticipants: 40,
       requiresEscalation: true,
@@ -47,7 +50,7 @@ export function buildSeedIssues(
     },
     {
       cellId,
-      villageId: villageByName.get("Kibagabaga")!.id,
+      villageId: v("Imanzi"),
       rawText:
         "Urukuta ruzengurutse ishuri ruri gusenyuka. Hari ibice byasadutse kandi byenda kugwira abana. Turasaba ko habaho gusana byihuse kugira ngo hirindwe impanuka.",
       submissionChannel: "web",
@@ -65,9 +68,9 @@ export function buildSeedIssues(
     },
     {
       cellId,
-      villageId: villageByName.get("Nyarutarama")!.id,
+      villageId: v("Amariza"),
       rawText:
-        "Ahari isoko imyanda irarenze, iragenda isuka mu muhanda no hafi y’amazu. Hari impumuro mbi kandi bikurura udukoko. Turasaba ko hakorwa umuganda wo kuyikuraho no kuyijyana ahabugenewe.",
+        "Ahari isoko imyanda irarenze, iragenda isuka mu muhanda no hafi y'amazu. Hari impumuro mbi kandi bikurura udukoko. Turasaba ko hakorwa umuganda wo kuyikuraho no kuyijyana ahabugenewe.",
       submissionChannel: "web",
       submitterPhone: null,
       languageDetected: "kinyarwanda",
@@ -84,9 +87,9 @@ export function buildSeedIssues(
     },
     {
       cellId,
-      villageId: villageByName.get("Kibagabaga")!.id,
+      villageId: v("Imanzi"),
       rawText:
-        "Umuhanda w’ingenzi unyura muri Kibagabaga warasenyutse (erosion) ku ntera nk’iyo meter 20. Abagenzi n’ibinyabiziga biragorwa, by’umwihariko iyo imvura yaguye. Turasaba ko hakorwa gusibura no kuwusana.",
+        "Umuhanda w'ingenzi unyura muri Imanzi warasenyutse (erosion) ku ntera nk'iyo meter 20. Abagenzi n'ibinyabiziga biragorwa, by'umwihariko iyo imvura yaguye. Turasaba ko hakorwa gusibura no kuwusana.",
       submissionChannel: "web",
       submitterPhone: null,
       languageDetected: "kinyarwanda",
@@ -94,7 +97,7 @@ export function buildSeedIssues(
       severity: 3,
       severityReason:
         "Road erosion affects mobility and access but is not an immediate life-threatening emergency.",
-      summary: "Main road through Kibagabaga eroded over 20 meters, affecting mobility",
+      summary: "Main road through Imanzi eroded over 20 meters, affecting mobility",
       recommendedAction: "Road erosion repair — fill and compact damaged section",
       estimatedParticipants: 45,
       requiresEscalation: false,

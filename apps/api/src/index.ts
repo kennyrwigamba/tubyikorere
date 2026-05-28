@@ -8,6 +8,7 @@ import { authMiddleware } from "./middleware/auth";
 import { attendanceRoutes } from "./routes/attendance";
 import { authRoutes } from "./routes/auth";
 import { villagesRoutes } from "./routes/villages";
+import { locationsRoutes } from "./routes/locations";
 import { issuesRoutes } from "./routes/issues";
 import { reportsRoutes } from "./routes/reports";
 import { umugandaRoutes } from "./routes/umuganda";
@@ -25,10 +26,18 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      if (!origin) return process.env.CLIENT_URL ?? "*";
-      if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return origin;
+      if (!origin) return process.env.CLIENT_URL?.split(",")[0]?.trim() ?? "*";
+
+      const allowedOrigins = (process.env.CLIENT_URL ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      if (allowedOrigins.includes(origin)) return origin;
       if (/^http:\/\/localhost:\d+$/.test(origin)) return origin;
-      return process.env.CLIENT_URL ?? "*";
+      if (/^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(origin)) return origin;
+
+      return allowedOrigins[0] ?? "*";
     },
     allowHeaders: ["Content-Type", "x-cell-id", "x-sector-id", "x-admin-token"],
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
@@ -42,6 +51,7 @@ app.get("/health", (c) => {
 
 app.route("/api/auth", authRoutes);
 app.route("/api/villages", villagesRoutes);
+app.route("/api/locations", locationsRoutes);
 app.route("/api/issues", issuesRoutes);
 app.route("/api/umuganda", umugandaRoutes);
 app.route("/api/attendance", attendanceRoutes);

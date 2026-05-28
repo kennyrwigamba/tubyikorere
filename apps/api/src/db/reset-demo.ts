@@ -14,9 +14,10 @@ import {
   workCompletions,
 } from "./schema";
 import { buildSeedIssues } from "./demo-issues";
+import { DEMO_CELL_ID, DEMO_CELL_NAME } from "./demo-config";
 
 /**
- * Resets Kimironko Cell demo data for a clean E2E run:
+ * Resets Bibare cell demo data for a clean E2E run:
  * - Removes umuganda sessions (and related attendance, plans, reports)
  * - Restores exactly 5 seeded issues in `open` status
  */
@@ -27,9 +28,12 @@ async function main() {
   const client = postgres(databaseUrl, { prepare: false });
   const db = drizzle(client);
 
-  const [cell] = await db.select().from(cells).where(eq(cells.name, "Kimironko Cell")).limit(1);
+  let [cell] = await db.select().from(cells).where(eq(cells.id, DEMO_CELL_ID)).limit(1);
   if (!cell) {
-    console.error("Kimironko Cell not found. Run: pnpm --filter api db:seed");
+    [cell] = await db.select().from(cells).where(eq(cells.name, DEMO_CELL_NAME)).limit(1);
+  }
+  if (!cell) {
+    console.error(`${DEMO_CELL_NAME} cell not found. Run: pnpm --filter api db:seed`);
     process.exit(1);
   }
 
@@ -54,7 +58,7 @@ async function main() {
   await db.delete(issues).where(eq(issues.cellId, cell.id));
   await db.insert(issues).values(buildSeedIssues(cell.id, villageByName));
 
-  console.log("Demo reset complete for Kimironko Cell:");
+  console.log(`Demo reset complete for ${DEMO_CELL_NAME} cell:`);
   console.log(`  - Removed ${sessionIds.length} umuganda session(s) and related data`);
   console.log("  - Restored 5 seeded issues (all open)");
   console.log(`  - Cell ID: ${cell.id}`);

@@ -20,6 +20,9 @@ export default function NotFoundRoute() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Button asChild className="h-11 w-full">
+            <Link to="/">Back to home</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 w-full">
             <Link to="/submit">Report an issue</Link>
           </Button>
           <Button asChild variant="outline" className="h-11 w-full">

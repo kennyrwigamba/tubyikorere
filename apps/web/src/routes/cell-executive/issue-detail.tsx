@@ -231,6 +231,15 @@ export default function CellExecutiveIssueDetailRoute() {
             <blockquote className="border-l-2 border-border pl-4 text-sm leading-relaxed text-foreground/90">
               {issue.rawText}
             </blockquote>
+            {issue.photoUrl ? (
+              <div className="mt-4 overflow-hidden rounded-lg border">
+                <img
+                  src={issue.photoUrl}
+                  alt="Issue site"
+                  className="max-h-80 w-full object-cover"
+                />
+              </div>
+            ) : null}
             {issue.languageDetected ? (
               <p className="mt-3 text-xs text-muted-foreground">
                 Language detected: {issue.languageDetected}

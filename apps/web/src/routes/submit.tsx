@@ -1,10 +1,27 @@
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  ArrowLeftIcon,
+  CameraIcon,
+  CheckCircle2Icon,
+  ImageIcon,
+  XIcon,
+} from "lucide-react";
 
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import {
+  fetchCells,
+  fetchDistricts,
+  fetchLocationVillages,
+  fetchProvinces,
+  fetchSectors,
+  formatLocationLabel,
+  type LocationOption,
+} from "@/lib/api/locations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,8 +36,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 const submitSchema = z.object({
-  village_id: z.string().trim().min(1, "Village is required"),
   raw_text: z
     .string()
     .trim()
@@ -38,113 +57,246 @@ const submitSchema = z.object({
 
 type SubmitFormValues = z.infer<typeof submitSchema>;
 
-type VillageOption = {
-  id: string;
+type LocationLevel = "province" | "district" | "sector" | "cell" | "village";
+
+function LocationField({
+  label,
+  labelRw,
+  placeholder,
+  value,
+  options,
+  loading,
+  disabled,
+  showBilingualOptions = false,
+  onChange,
+}: {
   label: string;
-};
-
-function toVillageOption(row: unknown): VillageOption | null {
-  if (!row || typeof row !== "object") return null;
-  const data = row as Record<string, unknown>;
-  const id = typeof data.id === "string" ? data.id : "";
-  if (!id) return null;
-
-  const name =
-    (typeof data.name === "string" && data.name) ||
-    (typeof data.nameKinyarwanda === "string" && data.nameKinyarwanda) ||
-    (typeof data.name_kinyarwanda === "string" && data.name_kinyarwanda) ||
-    "Unknown village";
-
-  return { id, label: name };
-}
-
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof (error as { response?: unknown }).response === "object"
-  ) {
-    const response = (error as { response?: { data?: { error?: string; message?: string } } })
-      .response;
-    if (response?.data?.error) return response.data.error;
-    if (response?.data?.message) return response.data.message;
-  }
-
-  if (error instanceof Error) return error.message;
-  return "Unable to submit your issue right now. Please try again.";
+  labelRw: string;
+  placeholder: string;
+  value: string;
+  options: LocationOption[];
+  loading?: boolean;
+  disabled?: boolean;
+  showBilingualOptions?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <Label>
+        {label} / {labelRw}
+      </Label>
+      <Select value={value} onValueChange={onChange} disabled={disabled || loading}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={loading ? "Loading..." : placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {showBilingualOptions ? formatLocationLabel(option) : option.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 
 export default function SubmitRoute() {
-  const [villages, setVillages] = useState<VillageOption[]>([]);
-  const [villagesLoading, setVillagesLoading] = useState(true);
-  const [villagesError, setVillagesError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [provinces, setProvinces] = useState<LocationOption[]>([]);
+  const [districts, setDistricts] = useState<LocationOption[]>([]);
+  const [sectors, setSectors] = useState<LocationOption[]>([]);
+  const [cells, setCells] = useState<LocationOption[]>([]);
+  const [villages, setVillages] = useState<LocationOption[]>([]);
+
+  const [provinceId, setProvinceId] = useState("");
+  const [districtId, setDistrictId] = useState("");
+  const [sectorId, setSectorId] = useState("");
+  const [cellId, setCellId] = useState("");
+  const [villageId, setVillageId] = useState("");
+
+  const [locationLoading, setLocationLoading] = useState<LocationLevel | null>("province");
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedIssueId, setSubmittedIssueId] = useState<string | null>(null);
-
-  const demoCellId = import.meta.env.VITE_DEMO_CELL_ID as string | undefined;
+  const [submittedWithPhoto, setSubmittedWithPhoto] = useState(false);
 
   const {
     register,
-    control,
     handleSubmit,
     reset,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<SubmitFormValues>({
-    defaultValues: {
-      village_id: "",
-      raw_text: "",
-      submitter_phone: "",
-    },
+    defaultValues: { raw_text: "", submitter_phone: "" },
   });
 
   useEffect(() => {
-    const loadVillages = async () => {
-      if (!demoCellId) {
-        setVillagesError("VITE_DEMO_CELL_ID is missing.");
-        setVillagesLoading(false);
-        return;
-      }
-
+    void (async () => {
       try {
-        setVillagesLoading(true);
-        setVillagesError(null);
-        const response = await api.get("/api/villages", {
-          params: { cell_id: demoCellId },
-        });
-
-        const rows = Array.isArray(response.data)
-          ? response.data
-          : Array.isArray((response.data as { villages?: unknown[] })?.villages)
-            ? (response.data as { villages: unknown[] }).villages
-            : [];
-
-        const next = rows.map(toVillageOption).filter((v): v is VillageOption => Boolean(v));
-        setVillages(next);
+        setLocationLoading("province");
+        setLocationError(null);
+        setProvinces(await fetchProvinces());
       } catch (error) {
-        setVillagesError(getErrorMessage(error));
+        setLocationError(getApiErrorMessage(error, "Unable to load provinces."));
       } finally {
-        setVillagesLoading(false);
+        setLocationLoading(null);
       }
-    };
+    })();
+  }, []);
 
-    void loadVillages();
-  }, [demoCellId]);
+  const handleProvinceChange = (value: string) => {
+    setProvinceId(value);
+    setDistrictId("");
+    setSectorId("");
+    setCellId("");
+    setVillageId("");
+    setDistricts([]);
+    setSectors([]);
+    setCells([]);
+    setVillages([]);
+  };
+
+  const handleDistrictChange = (value: string) => {
+    setDistrictId(value);
+    setSectorId("");
+    setCellId("");
+    setVillageId("");
+    setSectors([]);
+    setCells([]);
+    setVillages([]);
+  };
+
+  const handleSectorChange = (value: string) => {
+    setSectorId(value);
+    setCellId("");
+    setVillageId("");
+    setCells([]);
+    setVillages([]);
+  };
+
+  const handleCellChange = (value: string) => {
+    setCellId(value);
+    setVillageId("");
+    setVillages([]);
+  };
+
+  useEffect(() => {
+    if (!provinceId) return;
+    void (async () => {
+      try {
+        setLocationLoading("district");
+        setDistricts(await fetchDistricts(provinceId));
+      } catch (error) {
+        setLocationError(getApiErrorMessage(error, "Unable to load districts."));
+      } finally {
+        setLocationLoading(null);
+      }
+    })();
+  }, [provinceId]);
+
+  useEffect(() => {
+    if (!districtId) return;
+    void (async () => {
+      try {
+        setLocationLoading("sector");
+        setSectors(await fetchSectors(districtId));
+      } catch (error) {
+        setLocationError(getApiErrorMessage(error, "Unable to load sectors."));
+      } finally {
+        setLocationLoading(null);
+      }
+    })();
+  }, [districtId]);
+
+  useEffect(() => {
+    if (!sectorId) return;
+    void (async () => {
+      try {
+        setLocationLoading("cell");
+        setCells(await fetchCells(sectorId));
+      } catch (error) {
+        setLocationError(getApiErrorMessage(error, "Unable to load cells."));
+      } finally {
+        setLocationLoading(null);
+      }
+    })();
+  }, [sectorId]);
+
+  useEffect(() => {
+    if (!cellId) return;
+    void (async () => {
+      try {
+        setLocationLoading("village");
+        setVillages(await fetchLocationVillages(cellId));
+      } catch (error) {
+        setLocationError(getApiErrorMessage(error, "Unable to load villages."));
+      } finally {
+        setLocationLoading(null);
+      }
+    })();
+  }, [cellId]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const locationComplete = Boolean(provinceId && districtId && sectorId && cellId && villageId);
 
   const canSubmit = useMemo(
-    () => !villagesLoading && !villagesError && villages.length > 0 && !isSubmitting,
-    [villagesLoading, villagesError, villages.length, isSubmitting],
+    () => locationComplete && !locationError && !isSubmitting,
+    [locationComplete, locationError, isSubmitting],
   );
+
+  const openPhotoPicker = () => {
+    photoInputRef.current?.click();
+  };
+
+  const handlePhotoSelect = (file: File | null) => {
+    setPhotoError(null);
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+      setPhotoError("Photo must be JPEG, PNG, or WebP.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError("Photo must be 5 MB or smaller.");
+      return;
+    }
+
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const clearPhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
 
   const onSubmit = async (values: SubmitFormValues) => {
     setSubmitError(null);
     setSubmittedIssueId(null);
 
+    if (!locationComplete) {
+      setSubmitError("Please select the full location: province through village.");
+      return;
+    }
+
     const parsed = submitSchema.safeParse(values);
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
-      if (fieldErrors.village_id?.[0]) setError("village_id", { message: fieldErrors.village_id[0] });
       if (fieldErrors.raw_text?.[0]) setError("raw_text", { message: fieldErrors.raw_text[0] });
       if (fieldErrors.submitter_phone?.[0]) {
         setError("submitter_phone", { message: fieldErrors.submitter_phone[0] });
@@ -152,80 +304,116 @@ export default function SubmitRoute() {
       return;
     }
 
-    if (!demoCellId) {
-      setSubmitError("Submission is not configured: missing VITE_DEMO_CELL_ID.");
-      return;
-    }
-
     try {
-      const response = await api.post("/api/issues", {
-        raw_text: parsed.data.raw_text,
-        village_id: parsed.data.village_id,
-        cell_id: demoCellId,
-        submitter_phone: parsed.data.submitter_phone,
-        submission_channel: "web",
-      });
+      const formData = new FormData();
+      formData.append("raw_text", parsed.data.raw_text);
+      formData.append("cell_id", cellId);
+      formData.append("village_id", villageId);
+      formData.append("submission_channel", "web");
+      if (parsed.data.submitter_phone) {
+        formData.append("submitter_phone", parsed.data.submitter_phone);
+      }
+      if (photoFile) formData.append("photo", photoFile);
 
-      const issueId =
-        typeof response.data?.id === "string"
-          ? response.data.id
-          : typeof response.data?.issue_id === "string"
-            ? response.data.issue_id
-            : null;
+      const response = await api.post("/api/issues", formData);
+      const issueId = typeof response.data?.id === "string" ? response.data.id : null;
+      setSubmittedWithPhoto(Boolean(photoFile));
       setSubmittedIssueId(issueId);
 
-      reset({
-        village_id: "",
-        raw_text: "",
-        submitter_phone: "",
-      });
+      reset({ raw_text: "", submitter_phone: "" });
+      clearPhoto();
     } catch (error) {
-      setSubmitError(getErrorMessage(error));
+      setSubmitError(getApiErrorMessage(error, "Unable to submit your issue right now."));
     }
   };
 
+  // handleSubmit binds onSubmit once per render; ref access is only inside submit handler.
+  // eslint-disable-next-line react-hooks/refs -- react-hook-form submit wiring
+  const onFormSubmit = handleSubmit(onSubmit);
+
   return (
     <main className="min-h-svh bg-background">
-      <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col justify-center px-4 py-8">
+      <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center px-4 py-8">
+        <Button asChild variant="ghost" className="mb-4 w-fit">
+          <Link to="/">
+            <ArrowLeftIcon className="size-4" aria-hidden />
+            Back to home
+          </Link>
+        </Button>
+
         <Card>
           <CardHeader>
             <p className="text-sm font-semibold text-primary">Tubikorere</p>
             <CardTitle>Submit an issue / Ohereza ikibazo</CardTitle>
             <CardDescription>
-              Report a community problem quickly. / Menyesha ikibazo mu buryo bworoshye.
+              Tell us where the problem is, describe it, and add a photo so we can prioritize fairly
+              for Umuganda (once per month).
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-              <div className="space-y-1.5">
-                <Label htmlFor="village_id">Village / Umudugudu</Label>
-                <Controller
-                  control={control}
-                  name="village_id"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange} disabled={villagesLoading}>
-                      <SelectTrigger id="village_id" aria-invalid={Boolean(errors.village_id)}>
-                        <SelectValue
-                          placeholder={
-                            villagesLoading ? "Loading villages..." : "Select village / Hitamo umudugudu"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {villages.map((village) => (
-                          <SelectItem key={village.id} value={village.id}>
-                            {village.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.village_id ? (
-                  <p className="text-xs text-destructive">{errors.village_id.message}</p>
-                ) : null}
-              </div>
+            <form onSubmit={onFormSubmit} className="space-y-5" noValidate>
+              <section className="space-y-3 rounded-lg border bg-muted/20 p-4">
+                <div>
+                  <p className="text-sm font-semibold">Location / Aho ikibazo giherereye</p>
+                  <p className="text-xs text-muted-foreground">
+                    Province → District → Sector → Cell → Village
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <LocationField
+                    label="Province"
+                    labelRw="Intara"
+                    placeholder="Select province"
+                    value={provinceId}
+                    options={provinces}
+                    loading={locationLoading === "province"}
+                    showBilingualOptions
+                    onChange={handleProvinceChange}
+                  />
+                  <LocationField
+                    label="District"
+                    labelRw="Akarere"
+                    placeholder="Select district"
+                    value={districtId}
+                    options={districts}
+                    loading={locationLoading === "district"}
+                    disabled={!provinceId}
+                    onChange={handleDistrictChange}
+                  />
+                  <LocationField
+                    label="Sector"
+                    labelRw="Umurenge"
+                    placeholder="Select sector"
+                    value={sectorId}
+                    options={sectors}
+                    loading={locationLoading === "sector"}
+                    disabled={!districtId}
+                    onChange={handleSectorChange}
+                  />
+                  <LocationField
+                    label="Cell"
+                    labelRw="Akagari"
+                    placeholder="Select cell"
+                    value={cellId}
+                    options={cells}
+                    loading={locationLoading === "cell"}
+                    disabled={!sectorId}
+                    onChange={handleCellChange}
+                  />
+                  <LocationField
+                    label="Village"
+                    labelRw="Umudugudu"
+                    placeholder="Select village"
+                    value={villageId}
+                    options={villages}
+                    loading={locationLoading === "village"}
+                    disabled={!cellId}
+                    onChange={setVillageId}
+                  />
+                </div>
+              </section>
 
               <div className="space-y-1.5">
                 <Label htmlFor="raw_text">Describe the problem / Sobanura ikibazo</Label>
@@ -242,6 +430,67 @@ export default function SubmitRoute() {
                 ) : null}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="photo">Site photo (recommended) / Ifoto y&apos;ahantu</Label>
+                <p className="text-xs text-muted-foreground">
+                  Helps assess severity when many issues compete for one Umuganda day. Max 5 MB.
+                </p>
+                <input
+                  ref={photoInputRef}
+                  id="photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(event) => handlePhotoSelect(event.target.files?.[0] ?? null)}
+                />
+
+                {photoPreview ? (
+                  <div className="relative overflow-hidden rounded-lg border">
+                    <img
+                      src={photoPreview}
+                      alt="Selected issue site"
+                      className="max-h-56 w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon-sm"
+                      className="absolute top-2 right-2"
+                      onClick={clearPhoto}
+                      aria-label="Remove photo"
+                    >
+                      <XIcon className="size-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-24 w-full flex-col gap-2 border-dashed"
+                    onClick={openPhotoPicker}
+                  >
+                    <CameraIcon className="size-5 text-muted-foreground" />
+                    <span className="text-sm">Take or upload photo / Fata ifoto</span>
+                  </Button>
+                )}
+
+                {photoPreview ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="px-0"
+                    onClick={openPhotoPicker}
+                  >
+                    <ImageIcon className="size-4" />
+                    Replace photo
+                  </Button>
+                ) : null}
+
+                {photoError ? <p className="text-xs text-destructive">{photoError}</p> : null}
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="submitter_phone">
                   Your phone (optional) / Telephone yawe (ntibigomba)
@@ -256,19 +505,19 @@ export default function SubmitRoute() {
                   aria-invalid={Boolean(errors.submitter_phone)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  We&apos;ll notify you when your issue is resolved / Tuzakumenyesha igihe ikibazo cyawe
-                  gikemutse
+                  We&apos;ll notify you when your issue is resolved / Tuzakumenyesha igihe ikibazo
+                  cyawe gikemutse
                 </p>
                 {errors.submitter_phone ? (
                   <p className="text-xs text-destructive">{errors.submitter_phone.message}</p>
                 ) : null}
               </div>
 
-              {villagesError ? (
+              {locationError ? (
                 <Alert variant="destructive">
                   <AlertCircleIcon className="size-4" />
-                  <AlertTitle>Unable to load villages</AlertTitle>
-                  <AlertDescription>{villagesError}</AlertDescription>
+                  <AlertTitle>Unable to load locations</AlertTitle>
+                  <AlertDescription>{locationError}</AlertDescription>
                 </Alert>
               ) : null}
 
@@ -286,11 +535,12 @@ export default function SubmitRoute() {
                   <AlertTitle>Issue received / Ikibazo cyakiriwe</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p>
-                      Reference: <span className="font-mono font-semibold">{submittedIssueId.slice(0, 8).toUpperCase()}</span>.
-                      The cell executive will review this issue. If you left your number, we will contact you.
-                    </p>
-                    <p className="text-muted-foreground">
-                      Umuyobozi w&apos;akagari azacyigenzura. Nusize telefoni yawe, tuzakumenyesha.
+                      Reference:{" "}
+                      <span className="font-mono font-semibold">
+                        {submittedIssueId.slice(0, 8).toUpperCase()}
+                      </span>
+                      . The cell executive will review this issue
+                      {submittedWithPhoto ? " and your photo" : ""}.
                     </p>
                     <Button asChild variant="outline" size="sm" className="mt-1">
                       <Link to={`/track/${submittedIssueId}`}>Track status / Reba imiterere</Link>
@@ -309,4 +559,3 @@ export default function SubmitRoute() {
     </main>
   );
 }
-

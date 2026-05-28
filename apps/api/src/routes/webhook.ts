@@ -2,12 +2,12 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 
+import { DEMO_CELL_ID, DEMO_CELL_NAME } from "../db/demo-config";
 import { db } from "../db/client";
 import { cells, issues, sectors } from "../db/schema";
 import { scoreIssue } from "../services/claude";
 
-const DEMO_CELL_ID =
-  process.env.DEMO_CELL_ID ?? "573fe872-c863-4e51-9cd7-cc129fc6fa2f";
+const demoCellId = process.env.DEMO_CELL_ID ?? DEMO_CELL_ID;
 
 const MAX_CLAUDE_INPUT_CHARS = 1500;
 
@@ -62,9 +62,9 @@ Tuzakurikirana. We will follow up.`;
 }
 
 async function resolveDemoCell() {
-  let [cell] = await db.select().from(cells).where(eq(cells.id, DEMO_CELL_ID)).limit(1);
+  let [cell] = await db.select().from(cells).where(eq(cells.id, demoCellId)).limit(1);
   if (!cell) {
-    [cell] = await db.select().from(cells).where(eq(cells.name, "Kimironko Cell")).limit(1);
+    [cell] = await db.select().from(cells).where(eq(cells.name, DEMO_CELL_NAME)).limit(1);
   }
   return cell ?? null;
 }
@@ -83,7 +83,7 @@ webhookRoutes.post("/whatsapp", async (c) => {
 
     const cell = await resolveDemoCell();
     if (!cell) {
-      console.error("WhatsApp webhook: demo cell not found", DEMO_CELL_ID);
+      console.error("WhatsApp webhook: demo cell not found", demoCellId);
       return twimlResponse(
         c,
         "Ikibazo cyakiriwe ariko sisitemu irimo gukora. Your issue was received but the system is temporarily unavailable.",

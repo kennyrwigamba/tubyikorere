@@ -8,7 +8,7 @@ import {
 import type { SidebarBrand, SidebarNavItem, SidebarUser } from "@/lib/types/nav";
 
 export const DEMO_SIDEBAR_BRAND: SidebarBrand = {
-  name: "Kimironko Cell",
+  name: "Bibare",
   subtitle: "Gasabo · Kigali",
   icon: MapPinIcon,
 };

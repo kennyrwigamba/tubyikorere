@@ -1,9 +1,10 @@
 import axios from "axios";
 
 import { useAppStore } from "@/store";
+import { normalizeApiBaseUrl } from "@/lib/api/errors";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3001",
+  baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_URL),
 });
 
 const ADMIN_API_TOKEN =

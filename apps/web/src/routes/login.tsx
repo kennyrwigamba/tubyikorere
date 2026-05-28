@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { AlertCircleIcon, LogInIcon } from "lucide-react";
+import { AlertCircleIcon, ArrowLeftIcon, LogInIcon } from "lucide-react";
 
 import { ROLE_DEFAULT_ROUTE } from "@/lib/role-routes";
 import type { Role } from "@/lib/constants";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { useAppStore } from "@/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,23 +29,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof (error as { response?: unknown }).response === "object"
-  ) {
-    const response = (error as { response?: { data?: { error?: string; message?: string } } })
-      .response;
-    if (response?.data?.error) return response.data.error;
-    if (response?.data?.message) return response.data.message;
-  }
-
-  if (error instanceof Error) return error.message;
-  return "Unable to sign in. Please check your credentials and try again.";
-}
 
 export default function LoginRoute() {
   const navigate = useNavigate();
@@ -128,12 +112,12 @@ export default function LoginRoute() {
       }
       navigate(ROLE_DEFAULT_ROUTE[payload.role], { replace: true });
     } catch (error) {
-      setServerError(getErrorMessage(error));
+      setServerError(getApiErrorMessage(error, "Unable to sign in. Please check your credentials and try again."));
     }
   };
 
   return (
-    <AuthPageShell>
+    <AuthPageShell title="Sign in" subtitle="Official and coordinator access.">
       <Card>
         <CardHeader className="mb-4">
             <CardTitle className="text-2xl">Credentials</CardTitle>
@@ -186,6 +170,13 @@ export default function LoginRoute() {
               Demo — Cell executive: <span className="font-mono">+250788000001</span> / PIN{" "}
               <span className="font-mono">1234</span>
             </p>
+
+            <Button asChild variant="ghost" className="h-10 w-full">
+              <Link to="/">
+                <ArrowLeftIcon className="size-4" aria-hidden />
+                Back to home
+              </Link>
+            </Button>
           </form>
         </CardContent>
       </Card>

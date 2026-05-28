@@ -22,6 +22,7 @@ export type IssueApiRow = {
     umugandaSessionId: string | null;
     languageDetected: string | null;
     submitterPhone: string | null;
+    photoUrl: string | null;
   };
   village_name: string | null;
 };
@@ -53,6 +54,7 @@ export function mapIssueDetail(row: IssueApiRow): IssueDetail {
     umugandaSessionId: row.issue.umugandaSessionId,
     languageDetected: row.issue.languageDetected,
     submitterPhone: row.issue.submitterPhone,
+    photoUrl: row.issue.photoUrl,
   };
 }
 

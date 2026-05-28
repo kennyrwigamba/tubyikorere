@@ -3,15 +3,17 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../db/client";
-import { cells, issues, sectors, villages } from "../db/schema";
+import { cells, districts, issues, provinces, sectors, villages } from "../db/schema";
 import { scoreIssue } from "../services/claude";
+import { uploadIssuePhoto } from "../services/storage";
 
 const createIssueSchema = z.object({
   raw_text: z.string().min(5),
   cell_id: z.string().uuid(),
-  village_id: z.string().uuid().optional().nullable(),
+  village_id: z.string().uuid(),
   submitter_phone: z.string().optional().nullable(),
   submission_channel: z.enum(["web", "whatsapp"]).default("web"),
+  photo_url: z.string().url().optional().nullable(),
 });
 
 const updateStatusSchema = z.object({
@@ -20,6 +22,61 @@ const updateStatusSchema = z.object({
 });
 
 export const issuesRoutes = new Hono();
+
+async function resolveLocationContext(cellId: string, villageId: string) {
+  const [row] = await db
+    .select({
+      cellId: cells.id,
+      cellName: cells.name,
+      sectorName: sectors.name,
+      districtName: districts.name,
+      provinceName: provinces.name,
+      villageName: villages.name,
+    })
+    .from(villages)
+    .innerJoin(cells, eq(villages.cellId, cells.id))
+    .innerJoin(sectors, eq(cells.sectorId, sectors.id))
+    .innerJoin(districts, eq(sectors.districtId, districts.id))
+    .innerJoin(provinces, eq(districts.provinceId, provinces.id))
+    .where(and(eq(villages.id, villageId), eq(cells.id, cellId)))
+    .limit(1);
+
+  return row ?? null;
+}
+
+async function parseCreateIssueRequest(c: {
+  req: {
+    header: (name: string) => string | undefined;
+    json: () => Promise<unknown>;
+    parseBody: (options?: { all?: boolean }) => Promise<Record<string, string | File>>;
+  };
+}) {
+  const contentType = c.req.header("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const body = await c.req.parseBody();
+    const photo = body.photo instanceof File && body.photo.size > 0 ? body.photo : null;
+    let photoUrl: string | null = null;
+
+    if (photo) {
+      photoUrl = await uploadIssuePhoto(photo);
+    }
+
+    const parsed = createIssueSchema.safeParse({
+      raw_text: String(body.raw_text ?? ""),
+      cell_id: String(body.cell_id ?? ""),
+      village_id: String(body.village_id ?? ""),
+      submitter_phone: String(body.submitter_phone ?? "").trim() || null,
+      submission_channel: String(body.submission_channel ?? "web"),
+      photo_url: photoUrl,
+    });
+
+    return parsed;
+  }
+
+  const body = await c.req.json().catch(() => null);
+  return createIssueSchema.safeParse(body);
+}
 
 issuesRoutes.get("/", async (c) => {
   const cellId = c.req.query("cell_id");
@@ -121,37 +178,40 @@ issuesRoutes.get("/track/:ref", async (c) => {
 });
 
 issuesRoutes.post("/", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const parsed = createIssueSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: "Invalid request body", details: parsed.error.flatten() }, 400);
+  let parsed;
+  try {
+    parsed = await parseCreateIssueRequest(c);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid upload";
+    return c.json({ error: message }, 400);
+  }
+
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request body", details: parsed.error.flatten() }, 400);
+  }
 
   const payload = parsed.data;
-  const [cell] = await db
-    .select({
-      id: cells.id,
-      name: cells.name,
-      sectorName: sectors.name,
-    })
-    .from(cells)
-    .innerJoin(sectors, eq(cells.sectorId, sectors.id))
-    .where(eq(cells.id, payload.cell_id))
-    .limit(1);
-
-  if (!cell) return c.json({ error: "Cell not found" }, 404);
+  const location = await resolveLocationContext(payload.cell_id, payload.village_id);
+  if (!location) return c.json({ error: "Location not found" }, 404);
 
   const scored = await scoreIssue(payload.raw_text, {
-    cellName: cell.name,
-    sectorName: cell.sectorName,
+    cellName: location.cellName,
+    sectorName: location.sectorName,
+    districtName: location.districtName,
+    provinceName: location.provinceName,
+    villageName: location.villageName ?? undefined,
+    photoUrl: payload.photo_url,
   });
 
   const [inserted] = await db
     .insert(issues)
     .values({
       cellId: payload.cell_id,
-      villageId: payload.village_id ?? null,
+      villageId: payload.village_id,
       rawText: payload.raw_text,
       submissionChannel: payload.submission_channel,
       submitterPhone: payload.submitter_phone ?? null,
+      photoUrl: payload.photo_url ?? null,
       languageDetected: scored.language_detected,
       category: scored.category as typeof issues.$inferInsert.category,
       severity: scored.severity,

@@ -30,4 +30,5 @@ export type IssueDetail = IssuePreview & {
   umugandaSessionId: string | null;
   languageDetected: string | null;
   submitterPhone: string | null;
+  photoUrl: string | null;
 };
