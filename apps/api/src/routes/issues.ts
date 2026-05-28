@@ -228,6 +228,33 @@ issuesRoutes.post("/", async (c) => {
   return c.json(inserted, 201);
 });
 
+issuesRoutes.post("/:id/photo", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.parseBody();
+  const photo = body.photo instanceof File && body.photo.size > 0 ? body.photo : null;
+  if (!photo) {
+    return c.json({ error: "photo is required" }, 400);
+  }
+
+  try {
+    const photoUrl = await uploadIssuePhoto(photo);
+    const [updated] = await db
+      .update(issues)
+      .set({
+        photoUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(issues.id, id))
+      .returning();
+
+    if (!updated) return c.json({ error: "Issue not found" }, 404);
+    return c.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid upload";
+    return c.json({ error: message }, 400);
+  }
+});
+
 issuesRoutes.get("/:id", async (c) => {
   const id = c.req.param("id");
   const [row] = await db

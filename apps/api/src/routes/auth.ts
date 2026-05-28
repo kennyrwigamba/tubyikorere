@@ -24,7 +24,27 @@ export type AuthRole =
   | "admin";
 
 function normalizePhone(phone: string): string {
-  return phone.replace(/\s/g, "");
+  return phone.trim().replace(/\s+/g, "").replace(/[-()]/g, "");
+}
+
+function toRwandaCanonical(phone: string): string | null {
+  const value = normalizePhone(phone);
+  if (!value) return null;
+
+  if (value.startsWith("+250") && /^7\d{8}$/.test(value.slice(4))) {
+    return value;
+  }
+  if (value.startsWith("250") && /^7\d{8}$/.test(value.slice(3))) {
+    return `+${value}`;
+  }
+  if (value.startsWith("0") && /^7\d{8}$/.test(value.slice(1))) {
+    return `+250${value.slice(1)}`;
+  }
+  if (/^7\d{8}$/.test(value)) {
+    return `+250${value}`;
+  }
+
+  return null;
 }
 
 function phonesMatch(a: string, b: string): boolean {
@@ -33,6 +53,9 @@ function phonesMatch(a: string, b: string): boolean {
   if (left === right) return true;
   if (left.startsWith("+") && right === left.slice(1)) return true;
   if (right.startsWith("+") && left === right.slice(1)) return true;
+  const leftRw = toRwandaCanonical(left);
+  const rightRw = toRwandaCanonical(right);
+  if (leftRw && rightRw && leftRw === rightRw) return true;
   return false;
 }
 

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { ROLE_DEFAULT_ROUTE } from "@/lib/role-routes";
 import { useAppStore } from "@/store";
 
@@ -85,9 +86,12 @@ export default function ChangePinRoute() {
       });
 
       setAuth({ isFirstLogin: false });
+      notifySuccess("PIN updated successfully");
       navigate(ROLE_DEFAULT_ROUTE[role], { replace: true });
     } catch (error) {
-      setServerError(getApiErrorMessage(error, "Unable to change PIN. Please try again."));
+      const message = getApiErrorMessage(error, "Unable to change PIN. Please try again.");
+      setServerError(message);
+      notifyError(message);
     }
   };
 

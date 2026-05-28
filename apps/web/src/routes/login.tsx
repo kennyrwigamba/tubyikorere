@@ -8,6 +8,8 @@ import { ROLE_DEFAULT_ROUTE } from "@/lib/role-routes";
 import type { Role } from "@/lib/constants";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { notifyError, notifySuccess } from "@/lib/notify";
+import { isValidRwandaPhone, normalizeRwandaPhone } from "@/lib/phone";
 import { useAppStore } from "@/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +22,7 @@ const loginSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number"),
+    .refine(isValidRwandaPhone, "Enter a valid Rwanda phone number"),
   pin: z
     .string()
     .trim()
@@ -71,7 +73,7 @@ export default function LoginRoute() {
 
     try {
       const response = await api.post("/api/auth/login", {
-        phone: parsed.data.phone,
+        phone: normalizeRwandaPhone(parsed.data.phone) ?? parsed.data.phone,
         pin: parsed.data.pin,
       });
       const payload = response.data as {
@@ -110,9 +112,15 @@ export default function LoginRoute() {
         navigate("/change-pin", { replace: true });
         return;
       }
+      notifySuccess("Signed in successfully");
       navigate(ROLE_DEFAULT_ROUTE[payload.role], { replace: true });
     } catch (error) {
-      setServerError(getApiErrorMessage(error, "Unable to sign in. Please check your credentials and try again."));
+      const message = getApiErrorMessage(
+        error,
+        "Unable to sign in. Please check your credentials and try again.",
+      );
+      setServerError(message);
+      notifyError(message);
     }
   };
 
@@ -131,7 +139,7 @@ export default function LoginRoute() {
                 id="phone"
                 type="tel"
                 autoComplete="tel"
-                placeholder="e.g. +250788000001"
+                placeholder="e.g. 0788000001 or +250788000001"
                 {...register("phone")}
                 aria-invalid={Boolean(errors.phone)}
               />

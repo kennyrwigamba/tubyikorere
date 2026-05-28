@@ -13,6 +13,9 @@ import {
 
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { convertImageToWebp } from "@/lib/image";
+import { notifyError, notifySuccess } from "@/lib/notify";
+import { isValidRwandaPhone, normalizeRwandaPhone } from "@/lib/phone";
 import {
   fetchCells,
   fetchDistricts,
@@ -50,8 +53,8 @@ const submitSchema = z.object({
     .optional()
     .transform((value) => (value ? value : undefined))
     .refine(
-      (value) => !value || /^\+?[1-9]\d{7,14}$/.test(value),
-      "Enter a valid phone number",
+      (value) => !value || isValidRwandaPhone(value),
+      "Enter a valid Rwanda phone number",
     ),
 });
 
@@ -290,7 +293,9 @@ export default function SubmitRoute() {
     setSubmittedIssueId(null);
 
     if (!locationComplete) {
-      setSubmitError("Please select the full location: province through village.");
+      const message = "Please select the full location: province through village.";
+      setSubmitError(message);
+      notifyError(message);
       return;
     }
 
@@ -305,25 +310,43 @@ export default function SubmitRoute() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append("raw_text", parsed.data.raw_text);
-      formData.append("cell_id", cellId);
-      formData.append("village_id", villageId);
-      formData.append("submission_channel", "web");
-      if (parsed.data.submitter_phone) {
-        formData.append("submitter_phone", parsed.data.submitter_phone);
-      }
-      if (photoFile) formData.append("photo", photoFile);
-
-      const response = await api.post("/api/issues", formData);
+      const selectedPhoto = photoFile;
+      const response = await api.post("/api/issues", {
+        raw_text: parsed.data.raw_text,
+        cell_id: cellId,
+        village_id: villageId,
+        submission_channel: "web",
+        submitter_phone: parsed.data.submitter_phone
+          ? (normalizeRwandaPhone(parsed.data.submitter_phone) ?? parsed.data.submitter_phone)
+          : null,
+      });
       const issueId = typeof response.data?.id === "string" ? response.data.id : null;
       setSubmittedWithPhoto(Boolean(photoFile));
       setSubmittedIssueId(issueId);
+      notifySuccess("Issue submitted successfully");
+      notifySuccess("Your issue is being reviewed by officials.");
 
       reset({ raw_text: "", submitter_phone: "" });
       clearPhoto();
+
+      if (selectedPhoto && issueId) {
+        void (async () => {
+          try {
+            const webpPhoto = await convertImageToWebp(selectedPhoto);
+            const uploadData = new FormData();
+            uploadData.append("photo", webpPhoto);
+            await api.post(`/api/issues/${issueId}/photo`, uploadData);
+          } catch (uploadError) {
+            notifyError(
+              getApiErrorMessage(uploadError, "Issue submitted successfully, but photo upload failed."),
+            );
+          }
+        })();
+      }
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error, "Unable to submit your issue right now."));
+      const message = getApiErrorMessage(error, "Unable to submit your issue right now.");
+      setSubmitError(message);
+      notifyError(message);
     }
   };
 
@@ -500,7 +523,7 @@ export default function SubmitRoute() {
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
-                  placeholder="+2507..."
+                  placeholder="078... or +25078..."
                   {...register("submitter_phone")}
                   aria-invalid={Boolean(errors.submitter_phone)}
                 />

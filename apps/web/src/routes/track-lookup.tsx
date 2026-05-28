@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { notifyInfo } from "@/lib/notify";
 
 export default function TrackLookupRoute() {
   const navigate = useNavigate();
@@ -17,7 +18,9 @@ export default function TrackLookupRoute() {
     const ref = reference.trim().replace(/^#/, "").toUpperCase();
     if (ref.length >= 8) {
       navigate(`/track/${ref}`, { replace: true });
+      return;
     }
+    notifyInfo("Enter at least 8 characters from your reference ID.");
   };
 
   return (

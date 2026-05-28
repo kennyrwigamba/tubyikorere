@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = new Set([
 
 function isPublicRoute(method: string, path: string) {
   if (PUBLIC_ROUTES.has(`${method}:${path}`)) return true;
+  if (method === "POST" && /^\/api\/issues\/[0-9a-fA-F-]+\/photo$/.test(path)) return true;
   if (method === "GET" && path.startsWith("/api/issues/track/")) return true;
   if (method === "GET" && path.startsWith("/api/locations/")) return true;
   return false;
